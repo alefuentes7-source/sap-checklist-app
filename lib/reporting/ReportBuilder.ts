@@ -1,5 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
+import type { createClient } from "@/lib/supabase/server";
+
+type Client = ReturnType<typeof createClient>;
 
 import type {
     DailyClientReport,
@@ -10,7 +11,7 @@ import type {
     ReportSystem,
 } from "@/lib/reporting/types";
 
-type Client = SupabaseClient<Database>;
+
 
 export class ReportBuilder {
     private supabase: Client;
@@ -26,9 +27,9 @@ export class ReportBuilder {
 
     private systems: ReportSystem[] = [];
 
-    constructor(supabase: Client) {
-        this.supabase = supabase;
-    }
+    constructor(
+        private supabase: Client
+      ) {}
 
     /**
      * Define la fecha del informe.

@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
+import type { createClient } from "@/lib/supabase/server";
+
+type Client = ReturnType<typeof createClient>;
 import type { DailyClientReport } from "@/lib/reporting/types";
 
-type Client = SupabaseClient<Database>;
 
 export async function hydrateReportAssets(
   supabase: Client,

@@ -1,7 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
-
-type Client = SupabaseClient<Database>;
+import type { createClient } from "@/lib/supabase/server";
+type Client = ReturnType<typeof createClient>;
 
 export interface UpsertDailyReportParams {
   clientId: string;

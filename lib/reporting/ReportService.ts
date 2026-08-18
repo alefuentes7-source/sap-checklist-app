@@ -1,13 +1,14 @@
 import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/lib/types/database";
 import { getChecklistDate } from "@/lib/date";
 import { ReportBuilder } from "@/lib/reporting/ReportBuilder";
 import { hydrateReportAssets } from "@/lib/reporting/assets";
 import { ChecklistPdfDocument } from "@/lib/reporting/pdf/ChecklistPdfDocument";
 import { saveReportPdf } from "@/lib/reporting/storage/ReportStorage";
+
+import type { createClient } from "@/lib/supabase/server";
+
 
 
 import {
@@ -18,7 +19,7 @@ import {
 
 import { sendReportEmail } from "@/lib/reporting/email/ReportMailer";
 
-type Client = SupabaseClient<Database>;
+type Client = ReturnType<typeof createClient>;
 
 export interface GenerateDailyReportResult {
   reportId: string;
