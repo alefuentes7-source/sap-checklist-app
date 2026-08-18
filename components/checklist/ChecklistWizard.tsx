@@ -218,84 +218,114 @@ export function ChecklistWizard({
   }
 
   async function subirImagen(file: Blob) {
-    const checklistId = checklistIds[paso.system.id];
-
-    if (!checklistId || !userId) {
-      setError("No se pudo identificar el checklist actual.");
+    if (!userId) {
+      setError(
+        "No se pudo identificar al usuario actual. Recarga la página e intenta nuevamente."
+      );
       return;
     }
-
-    const currentStepKey =
-      `${paso.system.id}-${paso.reviewPoint.id}`;
-
-    const previewUrl = URL.createObjectURL(file);
-
+  
+    const systemId = paso.system.id;
+    const reviewPointId = paso.reviewPoint.id;
+    const currentStepKey = `${systemId}-${reviewPointId}`;
+  
+    let checklistId = checklistIds[systemId];
+  
     setError(null);
-
-    setRespuestas((prev) => {
-      const actual = prev[currentStepKey] ?? vacia();
-
-      return {
-        ...prev,
-        [currentStepKey]: {
-          ...actual,
-          uploading: true,
-          previewUrl,
-        },
-      };
-    });
-
+  
     try {
+      /*
+       * Si por alguna razón el checklist todavía no está
+       * cargado en el estado, lo creamos/recuperamos aquí.
+       */
+      if (!checklistId) {
+        console.log(
+          "Checklist no encontrado en estado. Recuperando/creando...",
+          {
+            clientId,
+            systemId,
+            userId,
+          }
+        );
+  
+        checklistId = await getOrCreateChecklist(supabase, {
+          clientId,
+          systemId,
+          userId,
+        });
+  
+        setChecklistIds((prev) => ({
+          ...prev,
+          [systemId]: checklistId!,
+        }));
+  
+        console.log(
+          "Checklist recuperado para evidencia:",
+          checklistId
+        );
+      }
+  
+      const previewUrl = URL.createObjectURL(file);
+  
+      setRespuestas((prev) => {
+        const actual = prev[currentStepKey] ?? vacia();
+  
+        return {
+          ...prev,
+          [currentStepKey]: {
+            ...actual,
+            uploading: true,
+            previewUrl,
+          },
+        };
+      });
+  
       const evidencePath = await uploadEvidence(supabase, {
         userId,
         checklistId,
-        reviewPointId: paso.reviewPoint.id,
+        reviewPointId,
         file,
       });
-
-      console.log(
-        "Evidence path recibido en Wizard:",
-        evidencePath
-      );
-
+  
       if (!evidencePath) {
         throw new Error(
           "Storage no devolvió la ruta de la evidencia."
         );
       }
-
+  
+      console.log(
+        "Evidence path recibido en Wizard:",
+        evidencePath
+      );
+  
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-
-        const nuevaRespuesta = {
-          ...actual,
-          evidencePath,
-          previewUrl,
-          uploading: false,
-        };
-
-        console.log(
-          "Respuesta después de guardar evidencia:",
-          nuevaRespuesta
-        );
-
+  
         return {
           ...prev,
-          [currentStepKey]: nuevaRespuesta,
+          [currentStepKey]: {
+            ...actual,
+            evidencePath,
+            previewUrl,
+            uploading: false,
+          },
         };
       });
     } catch (err: any) {
-      console.error("Error uploadEvidence:", err);
-
+      console.error(
+        "Error preparando/subiendo evidencia:",
+        err
+      );
+  
       setError(
         err?.message
           ? `No se pudo subir la evidencia: ${err.message}`
-          : "No se pudo subir la evidencia, intenta de nuevo."
+          : "No se pudo subir la evidencia, intenta nuevamente."
       );
-
+  
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-
+  
         return {
           ...prev,
           [currentStepKey]: {
