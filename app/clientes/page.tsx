@@ -8,6 +8,32 @@ import {
   getChecklistDate,
 } from "@/lib/date";
 
+interface PerfilRow {
+  name: string | null;
+}
+
+interface AsignacionRow {
+  client_id: string;
+}
+
+interface ProviderRow {
+  id: string;
+  name: string;
+  logo_url: string | null;
+}
+
+interface ClienteActivoRow {
+  id: string;
+  name: string;
+  country: string | null;
+  provider_id: string | null;
+  provider: ProviderRow | ProviderRow[] | null;
+}
+
+interface DailyReportRow {
+  client_id: string;
+  delivery_status: string | null;
+}
 
 export default async function ClientesPage() {
   const supabase = createClient();
@@ -21,9 +47,9 @@ export default async function ClientesPage() {
   }
 
   const [
-    { data: perfil },
-    { data: asignaciones },
-    { data: clientesActivos },
+    { data: perfilData },
+    { data: asignacionesData },
+    { data: clientesActivosData },
   ] = await Promise.all([
     supabase
       .from("users")
@@ -53,26 +79,47 @@ export default async function ClientesPage() {
       .order("name"),
   ]);
 
+  /*
+   * Tipados temporales.
+   *
+   * Tus tipos locales de Supabase están desactualizados
+   * respecto del esquema actual de la BD, por eso
+   * TypeScript estaba interpretando algunos resultados
+   * como never.
+   */
+  const perfil =
+    perfilData as PerfilRow | null;
+
+  const asignaciones =
+    (asignacionesData ?? []) as AsignacionRow[];
+
+  const clientesActivos =
+    (clientesActivosData ?? []) as ClienteActivoRow[];
+
+  /*
+   * Normalizamos la relación provider.
+   */
+  const clientes = clientesActivos.map((cliente) => {
+    const provider = Array.isArray(cliente.provider)
+      ? cliente.provider[0] ?? null
+      : cliente.provider ?? null;
+
+    return {
+      id: cliente.id,
+      name: cliente.name,
+      country: cliente.country,
+      providerName: provider?.name ?? null,
+      providerLogoUrl: provider?.logo_url ?? null,
+    };
+  });
+
+  /*
+   * Clientes asignados al operador.
+   */
   const idsAsignados = new Set(
-    (asignaciones ?? []).map(
+    asignaciones.map(
       (asignacion) => asignacion.client_id
     )
-  );
-
-  const clientes = (clientesActivos ?? []).map(
-    (cliente) => {
-      const provider = Array.isArray(cliente.provider)
-        ? cliente.provider[0] ?? null
-        : cliente.provider ?? null;
-
-      return {
-        id: cliente.id,
-        name: cliente.name,
-        country: cliente.country,
-        providerName: provider?.name ?? null,
-        providerLogoUrl: provider?.logo_url ?? null,
-      };
-    }
   );
 
   const asignados = clientes.filter((cliente) =>
@@ -83,6 +130,9 @@ export default async function ClientesPage() {
     (cliente) => !idsAsignados.has(cliente.id)
   );
 
+  /*
+   * Estado diario de los clientes.
+   */
   const assignedClientIds = asignados.map(
     (cliente) => cliente.id
   );
@@ -92,16 +142,18 @@ export default async function ClientesPage() {
   let sentClientIds = new Set<string>();
 
   if (assignedClientIds.length > 0) {
-    const { data: reports, error: reportsError } =
-      await supabase
-        .from("daily_reports")
-        .select("client_id, delivery_status")
-        .in("client_id", assignedClientIds)
-        .eq("execution_date", executionDate)
-        .eq(
-          "delivery_status",
-          "SENT_TO_OPERATOR"
-        );
+    const {
+      data: reportsData,
+      error: reportsError,
+    } = await supabase
+      .from("daily_reports")
+      .select("client_id, delivery_status")
+      .in("client_id", assignedClientIds)
+      .eq("execution_date", executionDate)
+      .eq(
+        "delivery_status",
+        "SENT_TO_OPERATOR"
+      );
 
     if (reportsError) {
       console.error(
@@ -110,16 +162,18 @@ export default async function ClientesPage() {
       );
     }
 
+    const reports =
+      (reportsData ?? []) as DailyReportRow[];
+
     sentClientIds = new Set(
-      (reports ?? []).map(
+      reports.map(
         (report) => report.client_id
       )
     );
   }
 
   /*
-   * El dashboard ahora trabaja a nivel CLIENTE,
-   * no a nivel de sistemas.
+   * Dashboard a nivel de cliente.
    */
   const totalClients = asignados.length;
 
@@ -141,8 +195,11 @@ export default async function ClientesPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      {/* Escucha cuando un popup termina y refresca
-          automáticamente los datos de esta página */}
+      {/*
+       * Cuando el popup termina un checklist,
+       * este componente ejecuta router.refresh()
+       * para actualizar el dashboard.
+       */}
       <ChecklistDashboardRefresh />
 
       <header className="flex items-start justify-between gap-4">

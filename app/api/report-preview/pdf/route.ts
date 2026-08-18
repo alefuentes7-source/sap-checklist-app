@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pdf } from "@react-pdf/renderer";
+import { renderToBuffer } from "@react-pdf/renderer";
 
 import { createClient } from "@/lib/supabase/server";
 import { ReportBuilder } from "@/lib/reporting/ReportBuilder";
 import { ChecklistPdfDocument } from "@/lib/reporting/pdf/ChecklistPdfDocument";
 import { getChecklistDate } from "@/lib/date";
-import React from "react";
 import { hydrateReportAssets } from "@/lib/reporting/assets";
 export const runtime = "nodejs";
 
@@ -50,19 +49,21 @@ export async function GET(request: NextRequest) {
             report
         );
 
-        const pdfBuffer = await pdf(
-            React.createElement(ChecklistPdfDocument, {
-                report: hydratedReport,
-            })
-        ).toBuffer();
+        const pdfDocument = ChecklistPdfDocument({
+            report: hydratedReport,
+          });
+          
+          const pdfBuffer = await renderToBuffer(pdfDocument);
 
-        return new NextResponse(pdfBuffer, {
+          const pdfBytes = new Uint8Array(pdfBuffer);
+
+          return new NextResponse(pdfBytes, {
             status: 200,
             headers: {
-                "Content-Type": "application/pdf",
-                "Content-Disposition": `inline; filename="${report.reportId}.pdf"`,
+              "Content-Type": "application/pdf",
+              "Content-Disposition": `inline; filename="${report.reportId}.pdf"`,
             },
-        });
+          });
     } catch (error) {
         console.error("Error generando PDF:", error);
 

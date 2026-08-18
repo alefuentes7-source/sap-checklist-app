@@ -1,4 +1,4 @@
-import React from "react";
+
 import { renderToBuffer } from "@react-pdf/renderer";
 
 import { getChecklistDate } from "@/lib/date";
@@ -57,10 +57,12 @@ export async function generateDailyClientReport(
     report
   );
 
+  const pdfDocument = ChecklistPdfDocument({
+    report: hydratedReport,
+  });
+
   const pdfBuffer = await renderToBuffer(
-    React.createElement(ChecklistPdfDocument, {
-      report: hydratedReport,
-    })
+    pdfDocument
   );
 
   const pdfPath = await saveReportPdf(supabase, {

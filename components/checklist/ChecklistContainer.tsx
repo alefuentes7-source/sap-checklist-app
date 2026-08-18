@@ -61,12 +61,14 @@ export function ChecklistContainer({
   useEffect(() => {
     if (!selectedSystemId) return;
 
+    const systemId = selectedSystemId;
+
     async function cargarChecklist() {
       setLoading(true);
 
       try {
         const system = systems.find(
-          (s) => s.id === selectedSystemId
+          (s) => s.id === systemId
         );
 
         if (!system) {
@@ -74,7 +76,7 @@ export function ChecklistContainer({
         }
 
         const {
-          data: reviewPoints,
+          data: reviewPointsData,
           error: reviewPointsError,
         } = await supabase
           .from("review_points")
@@ -87,19 +89,35 @@ export function ChecklistContainer({
             evidence_required,
             severity
           `)
-          .eq("system_id", selectedSystemId)
+          .eq("system_id", systemId)
           .eq("active", true)
           .order("display_order");
-          console.log("Review points activos:", reviewPoints);
-          console.log("Error review points:", reviewPointsError);
+        
         if (reviewPointsError) {
           throw reviewPointsError;
         }
+        
+        type ReviewPointRow = {
+          id: string;
+          title: string;
+          description: string | null;
+          review_instructions: string | null;
+          mandatory: boolean;
+          evidence_required: boolean;
+          severity: string | null;
+        };
+        
+        const reviewPoints =
+          (reviewPointsData ?? []) as ReviewPointRow[];
+        
+        console.log(
+          "Review points activos:",
+          reviewPoints
+        );
 
         const wizardSteps: WizardStep[] =
           (reviewPoints ?? []).map((rp) => ({
             system,
-
             reviewPoint: {
               id: rp.id,
               title: rp.title,
@@ -115,17 +133,7 @@ export function ChecklistContainer({
 
         console.log(
           "Sistema seleccionado:",
-          selectedSystemId
-        );
-
-        console.log(
-          "Review points:",
-          reviewPoints
-        );
-
-        console.log(
-          "Wizard steps:",
-          wizardSteps
+          systemId
         );
 
         setSystemSteps(wizardSteps);
@@ -142,11 +150,7 @@ export function ChecklistContainer({
     }
 
     cargarChecklist();
-  }, [
-    selectedSystemId,
-    systems,
-    supabase,
-  ]);
+  }, [selectedSystemId, systems, supabase]);
 
   /*
    * Genera, almacena y envía el informe
@@ -178,7 +182,7 @@ export function ChecklistContainer({
       if (!response.ok) {
         throw new Error(
           result?.error ??
-            "No se pudo generar el informe."
+          "No se pudo generar el informe."
         );
       }
 
@@ -209,7 +213,7 @@ export function ChecklistContainer({
 
       setErrorInforme(
         error?.message ??
-          "El checklist fue completado, pero no se pudo generar o enviar el informe."
+        "El checklist fue completado, pero no se pudo generar o enviar el informe."
       );
     } finally {
       setGenerandoInforme(false);
@@ -236,9 +240,9 @@ export function ChecklistContainer({
       )
         ? completedSystems
         : [
-            ...completedSystems,
-            systemIdCompletado,
-          ];
+          ...completedSystems,
+          systemIdCompletado,
+        ];
 
     setCompletedSystems(
       nuevosCompletados

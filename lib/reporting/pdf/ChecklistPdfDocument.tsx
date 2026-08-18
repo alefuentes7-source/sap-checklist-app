@@ -10,6 +10,8 @@ import {
 } from "@react-pdf/renderer";
 
 import type { DailyClientReport } from "@/lib/reporting/types";
+import type { ReactElement } from "react";
+import type { DocumentProps } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
     page: {
@@ -179,7 +181,7 @@ const styles = StyleSheet.create({
         borderRightWidth: 1,
         borderBottomWidth: 1,
         borderColor: "#d1d5db",
-      },
+    },
 
     cell: {
         padding: 5,
@@ -198,13 +200,13 @@ const styles = StyleSheet.create({
         width: "21%",
         alignItems: "flex-start",
         justifyContent: "center",
-      },
-      
-      commentsCell: {
+    },
+
+    commentsCell: {
         width: "16%",
         alignItems: "flex-start",
         justifyContent: "center",
-      },
+    },
 
 
     evidenceCell: {
@@ -370,7 +372,7 @@ export function ChecklistPdfDocument({
     report,
 }: {
     report: DailyClientReport;
-}) {
+}): ReactElement<DocumentProps> {
     return (
         <Document
             title={`Checklist SAP - ${report.client.name} - ${report.executionDate}`}

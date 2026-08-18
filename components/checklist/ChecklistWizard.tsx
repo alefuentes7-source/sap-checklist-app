@@ -9,7 +9,12 @@ import {
   submitChecklists,
   uploadEvidence,
 } from "@/lib/checklist";
-import type { ChecklistStatus } from "@/lib/types/database";
+
+import type { Database } from "@/lib/types/database";
+
+type ChecklistStatus =
+  Database["public"]["Enums"]["checklist_status_enum"];
+
 import { ScreenshotPaste } from "@/components/checklist/ScreenshotPaste";
 
 export interface WizardSystem {
@@ -94,6 +99,7 @@ export function ChecklistWizard({
   useEffect(() => {
     if (!userId || steps.length === 0) return;
 
+    const currentUserId = userId;
     const system = steps[0].system;
     let cancelled = false;
 
@@ -105,7 +111,7 @@ export function ChecklistWizard({
         const checklistId = await getOrCreateChecklist(supabase, {
           clientId,
           systemId: system.id,
-          userId,
+          userId: currentUserId,
         });
 
         if (cancelled) return;
@@ -213,22 +219,22 @@ export function ChecklistWizard({
 
   async function subirImagen(file: Blob) {
     const checklistId = checklistIds[paso.system.id];
-  
+
     if (!checklistId || !userId) {
       setError("No se pudo identificar el checklist actual.");
       return;
     }
-  
+
     const currentStepKey =
       `${paso.system.id}-${paso.reviewPoint.id}`;
-  
+
     const previewUrl = URL.createObjectURL(file);
-  
+
     setError(null);
-  
+
     setRespuestas((prev) => {
       const actual = prev[currentStepKey] ?? vacia();
-  
+
       return {
         ...prev,
         [currentStepKey]: {
@@ -238,7 +244,7 @@ export function ChecklistWizard({
         },
       };
     });
-  
+
     try {
       const evidencePath = await uploadEvidence(supabase, {
         userId,
@@ -246,33 +252,33 @@ export function ChecklistWizard({
         reviewPointId: paso.reviewPoint.id,
         file,
       });
-  
+
       console.log(
         "Evidence path recibido en Wizard:",
         evidencePath
       );
-  
+
       if (!evidencePath) {
         throw new Error(
           "Storage no devolvió la ruta de la evidencia."
         );
       }
-  
+
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-  
+
         const nuevaRespuesta = {
           ...actual,
           evidencePath,
           previewUrl,
           uploading: false,
         };
-  
+
         console.log(
           "Respuesta después de guardar evidencia:",
           nuevaRespuesta
         );
-  
+
         return {
           ...prev,
           [currentStepKey]: nuevaRespuesta,
@@ -280,16 +286,16 @@ export function ChecklistWizard({
       });
     } catch (err: any) {
       console.error("Error uploadEvidence:", err);
-  
+
       setError(
         err?.message
           ? `No se pudo subir la evidencia: ${err.message}`
           : "No se pudo subir la evidencia, intenta de nuevo."
       );
-  
+
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-  
+
         return {
           ...prev,
           [currentStepKey]: {
@@ -303,370 +309,370 @@ export function ChecklistWizard({
 
 
   async function guardarPasoActual(): Promise<boolean> {
-  const checklistId = checklistIds[paso.system.id];
+    const checklistId = checklistIds[paso.system.id];
 
-  if (!checklistId) {
-    setError("No se pudo identificar el checklist actual.");
-    return false;
-  }
-
-  const currentStepKey = `${paso.system.id}-${paso.reviewPoint.id}`;
-
-  const respuestaActual =
-    respuestas[currentStepKey] ?? vacia();
-
-  console.log("Respuesta antes de guardar:", {
-    stepKey: currentStepKey,
-    status: respuestaActual.status,
-    comments: respuestaActual.comments,
-    evidencePath: respuestaActual.evidencePath,
-    uploading: respuestaActual.uploading,
-  });
-
-  if (
-    paso.reviewPoint.mandatory &&
-    !respuestaActual.status
-  ) {
-    setError(
-      "Este punto es obligatorio: selecciona un estado antes de continuar."
-    );
-    return false;
-  }
-
-  if (respuestaActual.uploading) {
-    setError(
-      "La evidencia todavía se está subiendo. Espera unos segundos antes de continuar."
-    );
-    return false;
-  }
-
-  if (
-    paso.reviewPoint.evidence_required &&
-    !respuestaActual.evidencePath
-  ) {
-    setError(
-      "Este punto requiere una evidencia antes de continuar."
-    );
-    return false;
-  }
-
-  if (
-    respuestaActual.status === "WARNING" &&
-    !respuestaActual.evidencePath
-  ) {
-    setError(
-      "Cuando seleccionas Warning, debes adjuntar una evidencia."
-    );
-    return false;
-  }
-
-  if (
-    respuestaActual.status === "WARNING" &&
-    !respuestaActual.comments.trim()
-  ) {
-    setError(
-      "Cuando seleccionas Warning, debes indicar el motivo en los comentarios."
-    );
-    return false;
-  }
-
-  setError(null);
-  setGuardando(true);
-
-  try {
-    await saveChecklistResult(supabase, {
-      checklistId,
-      reviewPointId: paso.reviewPoint.id,
-      status: respuestaActual.status ?? "WARNING",
-      comments: respuestaActual.comments || null,
-      evidenceUrl: respuestaActual.evidencePath,
-    });
-
-    return true;
-  } catch (err: any) {
-    console.error("Error guardando resultado:", {
-      message: err?.message,
-      code: err?.code,
-      details: err?.details,
-      hint: err?.hint,
-      errorCompleto: err,
-    });
-
-    setError(
-      err?.message
-        ? `No se pudo guardar este paso: ${err.message}`
-        : "No se pudo guardar este paso, intenta de nuevo."
-    );
-
-    return false;
-  } finally {
-    setGuardando(false);
-  }
-}
-
-async function irSiguiente() {
-  const ok = await guardarPasoActual();
-  if (!ok) return;
-
-  if (index === steps.length - 1) {
-    await finalizar();
-    return;
-  }
-  setIndex((i) => i + 1);
-}
-
-async function irAnterior() {
-  await guardarPasoActual();
-  setIndex((i) => Math.max(0, i - 1));
-}
-
-async function finalizar() {
-  setGuardando(true);
-  setError(null);
-
-  try {
-    await submitChecklists(supabase, Object.values(checklistIds));
-
-    if (onCompleted) {
-      onCompleted();
-      return;
+    if (!checklistId) {
+      setError("No se pudo identificar el checklist actual.");
+      return false;
     }
 
-    setFinalizado(true);
-  } catch (err) {
-    console.error("Error finalizando checklist:", err);
-    setError("No se pudo finalizar el checklist, intenta de nuevo.");
-  } finally {
-    setGuardando(false);
+    const currentStepKey = `${paso.system.id}-${paso.reviewPoint.id}`;
+
+    const respuestaActual =
+      respuestas[currentStepKey] ?? vacia();
+
+    console.log("Respuesta antes de guardar:", {
+      stepKey: currentStepKey,
+      status: respuestaActual.status,
+      comments: respuestaActual.comments,
+      evidencePath: respuestaActual.evidencePath,
+      uploading: respuestaActual.uploading,
+    });
+
+    if (
+      paso.reviewPoint.mandatory &&
+      !respuestaActual.status
+    ) {
+      setError(
+        "Este punto es obligatorio: selecciona un estado antes de continuar."
+      );
+      return false;
+    }
+
+    if (respuestaActual.uploading) {
+      setError(
+        "La evidencia todavía se está subiendo. Espera unos segundos antes de continuar."
+      );
+      return false;
+    }
+
+    if (
+      paso.reviewPoint.evidence_required &&
+      !respuestaActual.evidencePath
+    ) {
+      setError(
+        "Este punto requiere una evidencia antes de continuar."
+      );
+      return false;
+    }
+
+    if (
+      respuestaActual.status === "WARNING" &&
+      !respuestaActual.evidencePath
+    ) {
+      setError(
+        "Cuando seleccionas Warning, debes adjuntar una evidencia."
+      );
+      return false;
+    }
+
+    if (
+      respuestaActual.status === "WARNING" &&
+      !respuestaActual.comments.trim()
+    ) {
+      setError(
+        "Cuando seleccionas Warning, debes indicar el motivo en los comentarios."
+      );
+      return false;
+    }
+
+    setError(null);
+    setGuardando(true);
+
+    try {
+      await saveChecklistResult(supabase, {
+        checklistId,
+        reviewPointId: paso.reviewPoint.id,
+        status: respuestaActual.status ?? "WARNING",
+        comments: respuestaActual.comments || null,
+        evidenceUrl: respuestaActual.evidencePath,
+      });
+
+      return true;
+    } catch (err: any) {
+      console.error("Error guardando resultado:", {
+        message: err?.message,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+        errorCompleto: err,
+      });
+
+      setError(
+        err?.message
+          ? `No se pudo guardar este paso: ${err.message}`
+          : "No se pudo guardar este paso, intenta de nuevo."
+      );
+
+      return false;
+    } finally {
+      setGuardando(false);
+    }
   }
-}
 
-if (finalizado) {
+  async function irSiguiente() {
+    const ok = await guardarPasoActual();
+    if (!ok) return;
+
+    if (index === steps.length - 1) {
+      await finalizar();
+      return;
+    }
+    setIndex((i) => i + 1);
+  }
+
+  async function irAnterior() {
+    await guardarPasoActual();
+    setIndex((i) => Math.max(0, i - 1));
+  }
+
+  async function finalizar() {
+    setGuardando(true);
+    setError(null);
+
+    try {
+      await submitChecklists(supabase, Object.values(checklistIds));
+
+      if (onCompleted) {
+        onCompleted();
+        return;
+      }
+
+      setFinalizado(true);
+    } catch (err) {
+      console.error("Error finalizando checklist:", err);
+      setError("No se pudo finalizar el checklist, intenta de nuevo.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  if (finalizado) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+        <span className="rounded-full bg-accent-soft px-3 py-1 font-mono text-xs uppercase tracking-wide text-accent">
+          Listo
+        </span>
+
+        <h1 className="font-display text-xl font-medium text-ink">
+          Checklist completado
+        </h1>
+
+        <p className="text-sm text-ink-soft">
+          Se guardaron los resultados de {Object.keys(checklistIds).length}{" "}
+          sistema(s) de {clientName}.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => window.close()}
+          className="mt-2 rounded-md bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-accent"
+        >
+          Cerrar ventana
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <span className="rounded-full bg-accent-soft px-3 py-1 font-mono text-xs uppercase tracking-wide text-accent">
-        Listo
-      </span>
-
-      <h1 className="font-display text-xl font-medium text-ink">
-        Checklist completado
-      </h1>
-
-      <p className="text-sm text-ink-soft">
-        Se guardaron los resultados de {Object.keys(checklistIds).length}{" "}
-        sistema(s) de {clientName}.
-      </p>
-
-      <button
-        type="button"
-        onClick={() => window.close()}
-        className="mt-2 rounded-md bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-accent"
-      >
-        Cerrar ventana
-      </button>
-    </div>
-  );
-}
-
-return (
-  <div className="flex h-full flex-col">
-    {/* Header fijo */}
-    <header className="border-b border-line px-4 py-3">
-      <p className="font-mono text-[11px] uppercase tracking-widest text-accent">
-        {clientName}
-      </p>
-
-      <div className="mt-2">
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-xs font-medium text-ink">
-            {Math.round(((index + 1) / steps.length) * 100)}%
-          </span>
-
-          <span className="font-mono text-[11px] text-ink-soft">
-            Punto {index + 1} de {steps.length}
-          </span>
-        </div>
-
-        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-line">
-          <div
-            className="h-full bg-accent transition-all duration-300"
-            style={{
-              width: `${((index + 1) / steps.length) * 100}%`,
-            }}
-          />
-        </div>
-      </div>
-    </header>
-
-    {/* Cuerpo con scroll */}
-    <div className="flex-1 overflow-y-auto px-4 py-4">
-      <div className="mb-4 rounded-card bg-ink px-3 py-2 text-white">
-        <p className="font-mono text-[11px] uppercase tracking-wide text-white/60">
-          Sistema
+    <div className="flex h-full flex-col">
+      {/* Header fijo */}
+      <header className="border-b border-line px-4 py-3">
+        <p className="font-mono text-[11px] uppercase tracking-widest text-accent">
+          {clientName}
         </p>
 
-        <p className="font-display text-sm font-medium">
-          {paso.system.sid ??
-            paso.system.description ??
-            "Sin SID"}
-
-          {paso.system.environment && (
-            <span className="ml-2 font-mono text-xs text-white/70">
-              {paso.system.environment}
+        <div className="mt-2">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs font-medium text-ink">
+              {Math.round(((index + 1) / steps.length) * 100)}%
             </span>
-          )}
-        </p>
 
-        {paso.system.description && paso.system.sid && (
-          <p className="mt-0.5 text-xs text-white/70">
-            {paso.system.description}
-          </p>
-        )}
-      </div>
+            <span className="font-mono text-[11px] text-ink-soft">
+              Punto {index + 1} de {steps.length}
+            </span>
+          </div>
 
-      <div className="flex items-center gap-2">
-        {paso.reviewPoint.severity && (
-          <span className="rounded-full bg-line/60 px-2 py-0.5 font-mono text-[10px] uppercase text-ink-soft">
-            {paso.reviewPoint.severity}
-          </span>
-        )}
-
-        {paso.reviewPoint.mandatory && (
-          <span className="rounded-full bg-warn-soft px-2 py-0.5 font-mono text-[10px] uppercase text-warn">
-            Obligatorio
-          </span>
-        )}
-      </div>
-
-      <h2 className="mt-2 font-display text-base font-medium text-ink">
-        {paso.reviewPoint.title}
-      </h2>
-
-      {paso.reviewPoint.description && (
-        <p className="mt-1 text-sm text-ink-soft">
-          {paso.reviewPoint.description}
-        </p>
-      )}
-
-      {paso.reviewPoint.review_instructions && (
-        <div className="mt-3 rounded-card border border-line bg-bg p-3">
-          <p className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
-            Cómo revisarlo en SAP
-          </p>
-
-          <p className="mt-1 text-sm text-ink">
-            {paso.reviewPoint.review_instructions}
-          </p>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-line">
+            <div
+              className="h-full bg-accent transition-all duration-300"
+              style={{
+                width: `${((index + 1) / steps.length) * 100}%`,
+              }}
+            />
+          </div>
         </div>
-      )}
+      </header>
 
-      <div className="mt-4">
-        <p className="mb-1 text-sm font-medium text-ink-soft">
-          Resultado de la revisión
-        </p>
-
-        <div className="grid grid-cols-2 gap-2">
-          {ESTADOS.map((estado) => (
-            <button
-              key={estado.value}
-              type="button"
-              onClick={() => actualizar({ status: estado.value })}
-              className={`rounded-md border px-3 py-2 text-sm font-medium transition ${respuesta.status === estado.value
-                ? estado.className
-                : "border-line bg-surface text-ink-soft hover:border-ink-soft"
-                }`}
-            >
-              {estado.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {respuesta.status === "WARNING" && (
-        <div className="mt-4 rounded-card border border-warn bg-warn-soft p-3">
-          <p className="text-sm font-medium text-warn">
-            ⚠️ Warning
+      {/* Cuerpo con scroll */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="mb-4 rounded-card bg-ink px-3 py-2 text-white">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-white/60">
+            Sistema
           </p>
 
-          <p className="mt-1 text-xs text-warn">
-            Para continuar debes adjuntar una evidencia y explicar el motivo
-            en los comentarios.
+          <p className="font-display text-sm font-medium">
+            {paso.system.sid ??
+              paso.system.description ??
+              "Sin SID"}
+
+            {paso.system.environment && (
+              <span className="ml-2 font-mono text-xs text-white/70">
+                {paso.system.environment}
+              </span>
+            )}
           </p>
-        </div>
-      )}
 
-      <div className="mt-4">
-        <ScreenshotPaste
-          previewUrl={respuesta.previewUrl}
-          uploading={respuesta.uploading}
-          onImage={subirImagen}
-          onClear={() =>
-            actualizar({
-              evidencePath: null,
-              previewUrl: null,
-            })
-          }
-        />
-
-        {paso.reviewPoint.evidence_required &&
-          !respuesta.evidencePath && (
-            <p className="mt-2 text-xs font-medium text-warn">
-              ⚠️ Evidencia obligatoria: debes adjuntar una imagen antes de continuar.
+          {paso.system.description && paso.system.sid && (
+            <p className="mt-0.5 text-xs text-white/70">
+              {paso.system.description}
             </p>
           )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {paso.reviewPoint.severity && (
+            <span className="rounded-full bg-line/60 px-2 py-0.5 font-mono text-[10px] uppercase text-ink-soft">
+              {paso.reviewPoint.severity}
+            </span>
+          )}
+
+          {paso.reviewPoint.mandatory && (
+            <span className="rounded-full bg-warn-soft px-2 py-0.5 font-mono text-[10px] uppercase text-warn">
+              Obligatorio
+            </span>
+          )}
+        </div>
+
+        <h2 className="mt-2 font-display text-base font-medium text-ink">
+          {paso.reviewPoint.title}
+        </h2>
+
+        {paso.reviewPoint.description && (
+          <p className="mt-1 text-sm text-ink-soft">
+            {paso.reviewPoint.description}
+          </p>
+        )}
+
+        {paso.reviewPoint.review_instructions && (
+          <div className="mt-3 rounded-card border border-line bg-bg p-3">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
+              Cómo revisarlo en SAP
+            </p>
+
+            <p className="mt-1 text-sm text-ink">
+              {paso.reviewPoint.review_instructions}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <p className="mb-1 text-sm font-medium text-ink-soft">
+            Resultado de la revisión
+          </p>
+
+          <div className="grid grid-cols-2 gap-2">
+            {ESTADOS.map((estado) => (
+              <button
+                key={estado.value}
+                type="button"
+                onClick={() => actualizar({ status: estado.value })}
+                className={`rounded-md border px-3 py-2 text-sm font-medium transition ${respuesta.status === estado.value
+                  ? estado.className
+                  : "border-line bg-surface text-ink-soft hover:border-ink-soft"
+                  }`}
+              >
+                {estado.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {respuesta.status === "WARNING" && (
+          <div className="mt-4 rounded-card border border-warn bg-warn-soft p-3">
+            <p className="text-sm font-medium text-warn">
+              ⚠️ Warning
+            </p>
+
+            <p className="mt-1 text-xs text-warn">
+              Para continuar debes adjuntar una evidencia y explicar el motivo
+              en los comentarios.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <ScreenshotPaste
+            previewUrl={respuesta.previewUrl}
+            uploading={respuesta.uploading}
+            onImage={subirImagen}
+            onClear={() =>
+              actualizar({
+                evidencePath: null,
+                previewUrl: null,
+              })
+            }
+          />
+
+          {paso.reviewPoint.evidence_required &&
+            !respuesta.evidencePath && (
+              <p className="mt-2 text-xs font-medium text-warn">
+                ⚠️ Evidencia obligatoria: debes adjuntar una imagen antes de continuar.
+              </p>
+            )}
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-1 text-sm font-medium text-ink-soft">
+            Comentarios
+          </p>
+
+          <textarea
+            value={respuesta.comments}
+            onChange={(event) =>
+              actualizar({ comments: event.target.value })
+            }
+            rows={3}
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+            placeholder={
+              respuesta.status === "WARNING"
+                ? "Describe el motivo del Warning…"
+                : "Notas, valores encontrados, observaciones…"
+            }
+          />
+        </div>
+
+        {error && (
+          <p className="mt-3 text-sm text-danger" role="alert">
+            {error}
+          </p>
+        )}
       </div>
 
-      <div className="mt-4">
-        <p className="mb-1 text-sm font-medium text-ink-soft">
-          Comentarios
-        </p>
+      {/* Footer fijo */}
+      <footer className="flex gap-2 border-t border-line px-4 py-3">
+        <button
+          type="button"
+          onClick={irAnterior}
+          disabled={index === 0 || guardando}
+          className="flex-1 rounded-md border border-line py-2 text-sm font-medium text-ink-soft transition hover:border-ink-soft disabled:opacity-40"
+        >
+          Anterior
+        </button>
 
-        <textarea
-          value={respuesta.comments}
-          onChange={(event) =>
-            actualizar({ comments: event.target.value })
-          }
-          rows={3}
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-          placeholder={
-            respuesta.status === "WARNING"
-              ? "Describe el motivo del Warning…"
-              : "Notas, valores encontrados, observaciones…"
-          }
-        />
-      </div>
-
-      {error && (
-        <p className="mt-3 text-sm text-danger" role="alert">
-          {error}
-        </p>
-      )}
+        <button
+          type="button"
+          onClick={irSiguiente}
+          disabled={guardando}
+          className="flex-1 rounded-md bg-ink py-2 text-sm font-medium text-white transition hover:bg-accent disabled:opacity-60"
+        >
+          {guardando
+            ? "Guardando…"
+            : index === steps.length - 1
+              ? "Finalizar checklist"
+              : "Guardar y siguiente →"}
+        </button>
+      </footer>
     </div>
-
-    {/* Footer fijo */}
-    <footer className="flex gap-2 border-t border-line px-4 py-3">
-      <button
-        type="button"
-        onClick={irAnterior}
-        disabled={index === 0 || guardando}
-        className="flex-1 rounded-md border border-line py-2 text-sm font-medium text-ink-soft transition hover:border-ink-soft disabled:opacity-40"
-      >
-        Anterior
-      </button>
-
-      <button
-        type="button"
-        onClick={irSiguiente}
-        disabled={guardando}
-        className="flex-1 rounded-md bg-ink py-2 text-sm font-medium text-white transition hover:bg-accent disabled:opacity-60"
-      >
-        {guardando
-          ? "Guardando…"
-          : index === steps.length - 1
-            ? "Finalizar checklist"
-            : "Guardar y siguiente →"}
-      </button>
-    </footer>
-  </div>
-);
+  );
 }

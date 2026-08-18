@@ -6,9 +6,8 @@ import { buildReportEmailHtml } from "@/lib/email/templates/ReportEmail";
 export interface SendReportEmailParams {
   report: DailyClientReport;
   recipients: string[];
-  pdfBuffer: Uint8Array;
+  pdfBuffer: Buffer;
 }
-
 export interface SendReportEmailResult {
   success: boolean;
   messageId: string;

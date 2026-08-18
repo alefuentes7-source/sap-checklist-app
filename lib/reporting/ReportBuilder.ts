@@ -12,12 +12,10 @@ import type {
 } from "@/lib/reporting/types";
 
 
-
 export class ReportBuilder {
-    private supabase: Client;
-
     private client: ReportClient | null = null;
     private providerId: string | null = null;
+  
     private provider: ReportProvider | null = null;
     private operator: ReportOperator | null = null;
 

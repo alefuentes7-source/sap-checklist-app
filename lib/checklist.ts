@@ -1,8 +1,14 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChecklistStatus, Database } from "@/lib/types/database";
+import type { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/lib/types/database";
+
+type ChecklistStatus =
+  Database["public"]["Enums"]["checklist_status_enum"];
+
+type Client = ReturnType<typeof createClient>;
+
 import { getChecklistDate } from "@/lib/date";
 
-type Client = SupabaseClient<Database>;
+
 
 /**
  * Busca un checklist en borrador (submitted = false) para este
@@ -22,33 +28,42 @@ export async function getOrCreateChecklist(
 
   const executionDate = getChecklistDate();
 
-  const { data: existente, error: errBusqueda } = await supabase
+  const { data: existenteData, error: errBusqueda } = await supabase
     .from("checklists")
     .select("id")
     .eq("client_id", clientId)
     .eq("system_id", systemId)
     .eq("created_by", userId)
-    .eq("execution_date", executionDate)
     .eq("submitted", false)
     .maybeSingle();
+
+  const existente =
+    existenteData as { id: string } | null;
 
   if (errBusqueda) throw errBusqueda;
   if (existente) return existente.id;
 
-  const { data: nuevo, error: errInsert } = await supabase
+  const { data: nuevoData, error: errInsert } = await supabase
     .from("checklists")
     .insert({
       client_id: clientId,
       system_id: systemId,
       created_by: userId,
-      execution_date: executionDate,
+      execution_date: new Date().toISOString().slice(0, 10),
       overall_status: "OK",
       submitted: false,
     })
     .select("id")
     .single();
 
+  const nuevo =
+    nuevoData as { id: string } | null;
+
   if (errInsert) throw errInsert;
+
+  if (!nuevo) {
+    throw new Error("No se pudo crear el checklist.");
+  }
 
   return nuevo.id;
 }

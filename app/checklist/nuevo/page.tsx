@@ -26,11 +26,16 @@ export default async function NuevoChecklistPage({
     redirect("/login");
   }
 
-  const { data: client } = await supabase
+  const { data: clientData } = await supabase
     .from("clients")
     .select("id, name")
     .eq("id", clientId)
     .single();
+
+  const client = clientData as {
+    id: string;
+    name: string;
+  } | null;
 
   if (!client) {
     redirect("/clientes");
@@ -38,17 +43,26 @@ export default async function NuevoChecklistPage({
 
   const executionDate = getChecklistDate();
 
-  const { data: systems } = await supabase
-    .from("systems")
-    .select("id, sid, description, environment, display_order")
-    .eq("client_id", clientId)
-    .eq("active", true)
-    .order("display_order", {
-      ascending: true,
-      nullsFirst: true,
-    });
+  const { data: systemsData } = await supabase
+  .from("systems")
+  .select("id, sid, description, environment, display_order")
+  .eq("client_id", clientId)
+  .eq("active", true)
+  .order("display_order", {
+    ascending: true,
+    nullsFirst: true,
+  });
 
-  const { data: completedChecklists } = await supabase
+const systems =
+  (systemsData ?? []) as {
+    id: string;
+    sid: string | null;
+    description: string | null;
+    environment: string | null;
+    display_order: number | null;
+  }[];
+
+  const { data: completedChecklistsData } = await supabase
     .from("checklists")
     .select("system_id")
     .eq("client_id", clientId)
@@ -56,9 +70,14 @@ export default async function NuevoChecklistPage({
     .eq("execution_date", executionDate)
     .eq("submitted", true);
 
+  const completedChecklists =
+    (completedChecklistsData ?? []) as {
+      system_id: string;
+    }[];
+
   const initialCompletedSystems = Array.from(
     new Set(
-      (completedChecklists ?? []).map(
+      completedChecklists.map(
         (checklist) => checklist.system_id
       )
     )
