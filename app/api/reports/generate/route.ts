@@ -20,13 +20,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!user.email) {
-      return NextResponse.json(
-        { error: "El usuario autenticado no tiene correo." },
-        { status: 400 }
-      );
-    }
-    
     const body = await request.json();
 
     const clientId = body?.clientId;
@@ -43,7 +36,6 @@ export async function POST(request: NextRequest) {
       {
         clientId,
         userId: user.id,
-        userEmail: user.email,
       }
     );
 
@@ -52,7 +44,10 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error: any) {
-    console.error("Error generate report:", error);
+    console.error(
+      "Error generate report:",
+      error
+    );
 
     return NextResponse.json(
       {

@@ -152,7 +152,7 @@ export default async function ClientesPage() {
       .eq("execution_date", executionDate)
       .eq(
         "delivery_status",
-        "SENT_TO_OPERATOR"
+        "SENT_TO_CLIENT"
       );
 
     if (reportsError) {

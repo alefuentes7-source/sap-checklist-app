@@ -70,11 +70,10 @@ export function SystemSelector({
             <button
               key={system.id}
               type="button"
-              disabled={completed}
               onClick={() => onSelect(system.id)}
               className={`w-full rounded-card border p-4 text-left transition ${
                 completed
-                  ? "cursor-default border-accent/30 bg-accent-soft opacity-80"
+                  ? "border-accent/30 bg-accent-soft hover:border-accent"
                   : "border-line bg-surface hover:border-accent"
               }`}
             >
@@ -100,7 +99,7 @@ export function SystemSelector({
 
                   {completed && (
                     <span className="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-white">
-                      Completado
+                      Revisado
                     </span>
                   )}
                 </div>

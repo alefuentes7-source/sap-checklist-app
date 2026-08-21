@@ -28,41 +28,52 @@ export async function getOrCreateChecklist(
 
   const executionDate = getChecklistDate();
 
-  const { data: existenteData, error: errBusqueda } = await supabase
-    .from("checklists")
-    .select("id")
-    .eq("client_id", clientId)
-    .eq("system_id", systemId)
-    .eq("created_by", userId)
-    .eq("submitted", false)
-    .maybeSingle();
+  const { data: existenteData, error: errBusqueda } =
+    await supabase
+      .from("checklists")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("system_id", systemId)
+      .eq("created_by", userId)
+      .eq("execution_date", executionDate)
+      .maybeSingle();
 
   const existente =
     existenteData as { id: string } | null;
 
-  if (errBusqueda) throw errBusqueda;
-  if (existente) return existente.id;
+  if (errBusqueda) {
+    throw errBusqueda;
+  }
 
-  const { data: nuevoData, error: errInsert } = await supabase
-    .from("checklists")
-    .insert({
-      client_id: clientId,
-      system_id: systemId,
-      created_by: userId,
-      execution_date: new Date().toISOString().slice(0, 10),
-      overall_status: "OK",
-      submitted: false,
-    })
-    .select("id")
-    .single();
+  if (existente) {
+    return existente.id;
+  }
+
+  const { data: nuevoData, error: errInsert } =
+    await supabase
+      .from("checklists")
+      .insert({
+        client_id: clientId,
+        system_id: systemId,
+        created_by: userId,
+        execution_date: executionDate,
+        overall_status: "OK",
+        submitted: false,
+      })
+      .select("id")
+      .single();
 
   const nuevo =
     nuevoData as { id: string } | null;
 
-  if (errInsert) throw errInsert;
+  if (errInsert) {
+    throw errInsert;
+  }
 
   if (!nuevo) {
-    throw new Error("No se pudo crear el checklist.");
+    throw new Error(
+      "No se pudo crear el checklist."
+    );
   }
 
   return nuevo.id;

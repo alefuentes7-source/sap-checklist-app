@@ -1,6 +1,7 @@
 import type { createClient } from "@/lib/supabase/server";
 
 type Client = ReturnType<typeof createClient>;
+
 import type { DailyClientReport } from "@/lib/reporting/types";
 
 export async function saveReportPdf(
