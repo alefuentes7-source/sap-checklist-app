@@ -33,6 +33,7 @@ export async function sendEmail(
         filename: attachment.filename,
         content: attachment.content,
         contentType: attachment.contentType,
+        cid: attachment.cid,
       })
     ),
   });

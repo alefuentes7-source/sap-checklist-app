@@ -1,8 +1,9 @@
 export interface EmailAttachment {
-    filename: string;
-    content: Buffer;
-    contentType?: string;
-  }
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+  cid?: string;
+}
   
   export interface SendEmailParams {
     to: string[];

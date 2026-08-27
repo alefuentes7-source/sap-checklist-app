@@ -79,19 +79,14 @@ export interface ReportSystem {
 
 export interface ReportReviewPoint {
   id: string;
-
   displayOrder: number;
-
   title: string;
   description: string | null;
   reviewInstructions: string | null;
-
   mandatory: boolean;
   evidenceRequired: boolean;
-
-  status: ReportStatus;
-
+  includeEvidenceInEmail: boolean;
+  status: string;
   comments: string | null;
-
   evidenceUrl: string | null;
 }

@@ -268,6 +268,7 @@ export class ReportBuilder {
               review_instructions,
               mandatory,
               evidence_required,
+              include_evidence_in_email,
               display_order
             `)
                 .in("system_id", systemIds)
@@ -342,6 +343,8 @@ export class ReportBuilder {
 
                         mandatory: reviewPoint.mandatory,
                         evidenceRequired: reviewPoint.evidence_required,
+                        includeEvidenceInEmail:
+                            reviewPoint.include_evidence_in_email ?? false,
 
                         status: result.status,
                         comments: result.comments,
