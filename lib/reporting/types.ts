@@ -86,7 +86,7 @@ export interface ReportReviewPoint {
   mandatory: boolean;
   evidenceRequired: boolean;
   includeEvidenceInEmail: boolean;
-  status: string;
+  status: "OK" | "WARNING";
   comments: string | null;
   evidenceUrl: string | null;
 }
