@@ -83,7 +83,7 @@ export function ClientCard({
     ? "✓ Enviado"
     : assigned
       ? "Asignado"
-      : "Cobertura"}
+      : "No Asignado"}
 </span>
     </button>
   );

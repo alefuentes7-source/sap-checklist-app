@@ -20,6 +20,7 @@ interface Props {
   clientName: string;
   systems: SystemItem[];
   initialCompletedSystems: string[];
+  clientSent: boolean;
 }
 
 interface Recipient {
@@ -34,6 +35,7 @@ export function ChecklistContainer({
   clientName,
   systems,
   initialCompletedSystems,
+  clientSent,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -649,12 +651,9 @@ export function ChecklistContainer({
 
         <SystemSelector
           systems={systems}
-          completedSystems={
-            completedSystems
-          }
-          onSelect={
-            setSelectedSystemId
-          }
+          completedSystems={completedSystems}
+          locked={clientSent}
+          onSelect={setSelectedSystemId}
         />
       </div>
     );

@@ -10,12 +10,14 @@ interface SystemItem {
 interface Props {
   systems: SystemItem[];
   completedSystems: string[];
+  locked: boolean;
   onSelect: (systemId: string) => void;
 }
 
 export function SystemSelector({
   systems,
   completedSystems,
+  locked,
   onSelect,
 }: Props) {
   const completedCount = completedSystems.filter((systemId) =>
@@ -40,7 +42,9 @@ export function SystemSelector({
   return (
     <div>
       <p className="mt-1 text-sm text-ink-soft">
-        Selecciona un sistema
+        {locked
+          ? "Informe enviado. Los sistemas están cerrados."
+          : "Selecciona un sistema"}
       </p>
 
       <div className="mt-4">
@@ -65,16 +69,20 @@ export function SystemSelector({
       <div className="mt-6 space-y-3">
         {systems.map((system) => {
           const completed = completedSystems.includes(system.id);
+          const disabled = locked;
 
           return (
             <button
               key={system.id}
               type="button"
+              disabled={disabled}
               onClick={() => onSelect(system.id)}
               className={`w-full rounded-card border p-4 text-left transition ${
-                completed
-                  ? "border-accent/30 bg-accent-soft hover:border-accent"
-                  : "border-line bg-surface hover:border-accent"
+                disabled
+                  ? "cursor-default border-line bg-bg opacity-60"
+                  : completed
+                    ? "border-accent/30 bg-accent-soft hover:border-accent"
+                    : "border-line bg-surface hover:border-accent"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -99,7 +107,7 @@ export function SystemSelector({
 
                   {completed && (
                     <span className="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-white">
-                      Revisado
+                      {locked ? "Finalizado" : "Revisado"}
                     </span>
                   )}
                 </div>
