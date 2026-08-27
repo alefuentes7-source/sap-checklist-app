@@ -1,4 +1,7 @@
-export type ReportStatus = "OK" | "WARNING";
+export type ReportReviewPointStatus =
+  | "OK"
+  | "WARNING";
+
 
 export interface ReportMetadata {
   application: string;
@@ -66,9 +69,10 @@ export interface ReportSystem {
   displayOrder: number;
 
   checklistId: string;
+
   submittedAt: string | null;
 
-  overallStatus: ReportStatus;
+  overallStatus: "OK" | "WARNING";
 
   totalReviewPoints: number;
   okReviewPoints: number;
@@ -80,13 +84,17 @@ export interface ReportSystem {
 export interface ReportReviewPoint {
   id: string;
   displayOrder: number;
+
   title: string;
   description: string | null;
   reviewInstructions: string | null;
+
   mandatory: boolean;
   evidenceRequired: boolean;
   includeEvidenceInEmail: boolean;
-  status: "OK" | "WARNING";
+
+  status: ReportReviewPointStatus;
+
   comments: string | null;
   evidenceUrl: string | null;
 }

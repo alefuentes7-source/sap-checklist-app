@@ -457,8 +457,11 @@ export function ChecklistPdfDocument({
                             style={styles.systemSummaryItem}
                         >
                             <StatusIcon
-                                status={system.overallStatus}
-                                size={14}
+                                status={
+                                    system.overallStatus === "WARNING"
+                                        ? "WARNING"
+                                        : "OK"
+                                }
                             />
 
                             <Text style={styles.systemSummarySid}>
@@ -553,7 +556,11 @@ export function ChecklistPdfDocument({
                                     ]}
                                 >
                                     <StatusIcon
-                                        status={point.status}
+                                        status={
+                                            point.status === "WARNING"
+                                                ? "WARNING"
+                                                : "OK"
+                                        }
                                         size={20}
                                     />
                                 </View>
