@@ -10,10 +10,49 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
+      admin_daily_summary: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          execution_date: string
+          id: string
+          pending_systems: number
+          recipients: string[] | null
+          sent_at: string | null
+          status: string
+          submitted_systems: number
+          total_systems: number
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          execution_date: string
+          id?: string
+          pending_systems?: number
+          recipients?: string[] | null
+          sent_at?: string | null
+          status?: string
+          submitted_systems?: number
+          total_systems?: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          execution_date?: string
+          id?: string
+          pending_systems?: number
+          recipients?: string[] | null
+          sent_at?: string | null
+          status?: string
+          submitted_systems?: number
+          total_systems?: number
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -178,7 +217,10 @@ export type Database = {
           email: string | null
           id: string
           name: string
+          notification_type: string
+          recipient_type: string
           role_description: string | null
+          updated_at: string
         }
         Insert: {
           active?: boolean
@@ -187,7 +229,10 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
+          notification_type?: string
+          recipient_type?: string
           role_description?: string | null
+          updated_at?: string
         }
         Update: {
           active?: boolean
@@ -196,7 +241,10 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          notification_type?: string
+          recipient_type?: string
           role_description?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -393,6 +441,7 @@ export type Database = {
           display_order: number
           evidence_required: boolean
           id: string
+          include_evidence_in_email: boolean
           mandatory: boolean
           review_instructions: string | null
           severity: string
@@ -407,6 +456,7 @@ export type Database = {
           display_order?: number
           evidence_required?: boolean
           id?: string
+          include_evidence_in_email?: boolean
           mandatory?: boolean
           review_instructions?: string | null
           severity?: string
@@ -421,6 +471,7 @@ export type Database = {
           display_order?: number
           evidence_required?: boolean
           id?: string
+          include_evidence_in_email?: boolean
           mandatory?: boolean
           review_instructions?: string | null
           severity?: string
