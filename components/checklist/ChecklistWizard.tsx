@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  deleteEvidence,
   getChecklistResults,
   getOrCreateChecklist,
   saveChecklistResult,
   submitChecklists,
   uploadEvidence,
+  type ChecklistEvidence,
 } from "@/lib/checklist";
-
 import type { Database } from "@/lib/types/database";
 
 type ChecklistStatus =
@@ -39,11 +40,15 @@ export interface WizardStep {
   reviewPoint: WizardReviewPoint;
 }
 
+interface EvidenceItem {
+  evidence: ChecklistEvidence;
+  previewUrl: string | null;
+}
+
 interface Respuesta {
   status: ChecklistStatus | null;
   comments: string;
-  evidencePath: string | null;
-  previewUrl: string | null;
+  evidences: EvidenceItem[];
   uploading: boolean;
 }
 
@@ -61,7 +66,12 @@ const ESTADOS: { value: ChecklistStatus; label: string; className: string }[] = 
 ];
 
 function vacia(): Respuesta {
-  return { status: null, comments: "", evidencePath: null, previewUrl: null, uploading: false };
+  return {
+    status: null,
+    comments: "",
+    evidences: [],
+    uploading: false,
+  };
 }
 
 export function ChecklistWizard({
@@ -132,11 +142,42 @@ export function ChecklistWizard({
         for (const result of savedResults) {
           const key = `${system.id}-${result.reviewPointId}`;
 
+          const evidencesWithPreview = await Promise.all(
+            result.evidences.map(async (evidence) => {
+              const { data, error } = await supabase.storage
+                .from("evidence")
+                .createSignedUrl(
+                  evidence.storagePath,
+                  60 * 60
+                );
+          
+              if (error) {
+                console.error(
+                  "No se pudo generar signed URL para evidencia:",
+                  {
+                    evidenceId: evidence.id,
+                    storagePath: evidence.storagePath,
+                    error,
+                  }
+                );
+          
+                return {
+                  evidence,
+                  previewUrl: null,
+                };
+              }
+          
+              return {
+                evidence,
+                previewUrl: data.signedUrl,
+              };
+            })
+          );
+          
           respuestasGuardadas[key] = {
             status: result.status,
             comments: result.comments ?? "",
-            evidencePath: result.evidenceUrl,
-            previewUrl: null,
+            evidences: evidencesWithPreview,
             uploading: false,
           };
         }
@@ -219,113 +260,96 @@ export function ChecklistWizard({
 
   async function subirImagen(file: Blob) {
     if (!userId) {
-      setError(
-        "No se pudo identificar al usuario actual. Recarga la página e intenta nuevamente."
-      );
+      setError("No se pudo identificar al usuario actual.");
       return;
     }
-  
+
+    const currentUserId = userId;
     const systemId = paso.system.id;
     const reviewPointId = paso.reviewPoint.id;
     const currentStepKey = `${systemId}-${reviewPointId}`;
-  
+
     let checklistId = checklistIds[systemId];
-  
+
     setError(null);
-  
+
     try {
-      /*
-       * Si por alguna razón el checklist todavía no está
-       * cargado en el estado, lo creamos/recuperamos aquí.
-       */
       if (!checklistId) {
-        console.log(
-          "Checklist no encontrado en estado. Recuperando/creando...",
-          {
-            clientId,
-            systemId,
-            userId,
-          }
-        );
-  
         checklistId = await getOrCreateChecklist(supabase, {
           clientId,
           systemId,
-          userId,
+          userId: currentUserId,
         });
-  
+
         setChecklistIds((prev) => ({
           ...prev,
           [systemId]: checklistId!,
         }));
-  
-        console.log(
-          "Checklist recuperado para evidencia:",
-          checklistId
-        );
       }
-  
+
+      const respuestaActual =
+        respuestas[currentStepKey] ?? vacia();
+
+      await saveChecklistResult(supabase, {
+        checklistId,
+        reviewPointId,
+        status: respuestaActual.status ?? "OK",
+        comments: respuestaActual.comments || null,
+        evidenceUrl:
+          respuestaActual.evidences[0]?.evidence.storagePath ?? null,
+      });
+
       const previewUrl = URL.createObjectURL(file);
-  
+
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-  
+
         return {
           ...prev,
           [currentStepKey]: {
             ...actual,
             uploading: true,
-            previewUrl,
           },
         };
       });
-  
-      const evidencePath = await uploadEvidence(supabase, {
-        userId,
+
+      const evidence = await uploadEvidence(supabase, {
+        userId: currentUserId,
         checklistId,
         reviewPointId,
         file,
       });
-  
-      if (!evidencePath) {
-        throw new Error(
-          "Storage no devolvió la ruta de la evidencia."
-        );
-      }
-  
-      console.log(
-        "Evidence path recibido en Wizard:",
-        evidencePath
-      );
-  
+
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-  
+
         return {
           ...prev,
           [currentStepKey]: {
             ...actual,
-            evidencePath,
-            previewUrl,
+            evidences: [
+              ...actual.evidences,
+              {
+                evidence,
+                previewUrl,
+              },
+            ],
             uploading: false,
           },
         };
       });
     } catch (err: any) {
-      console.error(
-        "Error preparando/subiendo evidencia:",
-        err
-      );
-  
+      console.error("Error uploadEvidence:", err);
+
       setError(
         err?.message
           ? `No se pudo subir la evidencia: ${err.message}`
-          : "No se pudo subir la evidencia, intenta nuevamente."
+          : "No se pudo subir la evidencia, intenta de nuevo."
       );
-  
+
       setRespuestas((prev) => {
         const actual = prev[currentStepKey] ?? vacia();
-  
+
         return {
           ...prev,
           [currentStepKey]: {
@@ -337,6 +361,35 @@ export function ChecklistWizard({
     }
   }
 
+  async function quitarEvidencia(item: EvidenceItem) {
+    try {
+      await deleteEvidence(supabase, item.evidence);
+
+      setRespuestas((prev) => {
+        const actual = prev[stepKey] ?? vacia();
+
+        return {
+          ...prev,
+          [stepKey]: {
+            ...actual,
+            evidences: actual.evidences.filter(
+              (candidate) =>
+                candidate.evidence.id !== item.evidence.id
+            ),
+          },
+        };
+      });
+
+      if (item.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    } catch (err: any) {
+      console.error("Error eliminando evidencia:", err);
+      setError(
+        err?.message ?? "No se pudo eliminar la evidencia."
+      );
+    }
+  }
 
   async function guardarPasoActual(): Promise<boolean> {
     const checklistId = checklistIds[paso.system.id];
@@ -355,7 +408,7 @@ export function ChecklistWizard({
       stepKey: currentStepKey,
       status: respuestaActual.status,
       comments: respuestaActual.comments,
-      evidencePath: respuestaActual.evidencePath,
+      evidences: respuestaActual.evidences.length,
       uploading: respuestaActual.uploading,
     });
 
@@ -365,33 +418,6 @@ export function ChecklistWizard({
     ) {
       setError(
         "Este punto es obligatorio: selecciona un estado antes de continuar."
-      );
-      return false;
-    }
-
-    if (respuestaActual.uploading) {
-      setError(
-        "La evidencia todavía se está subiendo. Espera unos segundos antes de continuar."
-      );
-      return false;
-    }
-
-    if (
-      paso.reviewPoint.evidence_required &&
-      !respuestaActual.evidencePath
-    ) {
-      setError(
-        "Este punto requiere una evidencia antes de continuar."
-      );
-      return false;
-    }
-
-    if (
-      respuestaActual.status === "WARNING" &&
-      !respuestaActual.evidencePath
-    ) {
-      setError(
-        "Cuando seleccionas Warning, debes adjuntar una evidencia."
       );
       return false;
     }
@@ -406,6 +432,23 @@ export function ChecklistWizard({
       return false;
     }
 
+    if (respuestaActual.uploading) {
+      setError(
+        "La evidencia todavía se está subiendo. Espera unos segundos antes de continuar."
+      );
+      return false;
+    }
+
+    if (
+      respuestaActual.status === "WARNING" &&
+      respuestaActual.evidences.length === 0
+    ) {
+      setError(
+        "Cuando seleccionas Warning, debes adjuntar una evidencia."
+      );
+      return false;
+    }
+
     setError(null);
     setGuardando(true);
 
@@ -415,7 +458,8 @@ export function ChecklistWizard({
         reviewPointId: paso.reviewPoint.id,
         status: respuestaActual.status ?? "WARNING",
         comments: respuestaActual.comments || null,
-        evidenceUrl: respuestaActual.evidencePath,
+        evidenceUrl:
+          respuestaActual.evidences[0]?.evidence.storagePath ?? null,
       });
 
       return true;
@@ -633,21 +677,35 @@ export function ChecklistWizard({
 
         <div className="mt-4">
           <ScreenshotPaste
-            previewUrl={respuesta.previewUrl}
+            evidences={respuesta.evidences.map(
+              (item) => ({
+                id: item.evidence.id,
+                storagePath:
+                  item.evidence.storagePath,
+                previewUrl:
+                  item.previewUrl,
+              })
+            )}
             uploading={respuesta.uploading}
             onImage={subirImagen}
-            onClear={() =>
-              actualizar({
-                evidencePath: null,
-                previewUrl: null,
-              })
-            }
+            onRemove={(evidenceId) => {
+              const item =
+                respuesta.evidences.find(
+                  (candidate) =>
+                    candidate.evidence.id ===
+                    evidenceId
+                );
+
+              if (item) {
+                void quitarEvidencia(item);
+              }
+            }}
           />
 
           {paso.reviewPoint.evidence_required &&
-            !respuesta.evidencePath && (
-              <p className="mt-2 text-xs font-medium text-warn">
-                ⚠️ Evidencia obligatoria: debes adjuntar una imagen antes de continuar.
+            respuesta.evidences.length === 0 && (
+              <p className="mt-2 text-xs text-warn">
+                ⚠️ Este punto requiere evidencia.
               </p>
             )}
         </div>

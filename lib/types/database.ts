@@ -113,6 +113,38 @@ export type Database = {
           },
         ]
       }
+      checklist_result_evidences: {
+        Row: {
+          checklist_result_id: string
+          created_at: string
+          display_order: number
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          checklist_result_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          checklist_result_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_result_evidences_checklist_result_id_fkey"
+            columns: ["checklist_result_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_results: {
         Row: {
           checklist_id: string

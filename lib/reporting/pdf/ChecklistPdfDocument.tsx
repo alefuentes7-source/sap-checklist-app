@@ -259,7 +259,13 @@ const styles = StyleSheet.create({
         textAlign: "left",
     },
 
-    /* Evidencia con tamaño fijo */
+    /* Evidencias múltiples */
+    evidencesContainer: {
+        width: "100%",
+        flexDirection: "column",
+        alignItems: "center",
+    },
+
     evidenceFrame: {
         width: 205,
         height: 112,
@@ -270,6 +276,11 @@ const styles = StyleSheet.create({
         borderColor: "#e5e7eb",
         borderRadius: 3,
         padding: 2,
+        marginBottom: 5,
+    },
+
+    evidenceFrameLast: {
+        marginBottom: 0,
     },
 
     evidence: {
@@ -608,12 +619,31 @@ export function ChecklistPdfDocument({
                                         styles.evidenceCell,
                                     ]}
                                 >
-                                    {point.evidenceUrl ? (
-                                        <View style={styles.evidenceFrame}>
-                                            <Image
-                                                src={point.evidenceUrl}
-                                                style={styles.evidence}
-                                            />
+                                    {point.evidences.some(
+                                        (evidence) => Boolean(evidence.imageUrl)
+                                    ) ? (
+                                        <View style={styles.evidencesContainer}>
+                                            {point.evidences
+                                                .filter(
+                                                    (evidence) =>
+                                                        Boolean(evidence.imageUrl)
+                                                )
+                                                .map((evidence, index, visibleEvidences) => (
+                                                    <View
+                                                        key={evidence.id}
+                                                        style={[
+                                                            styles.evidenceFrame,
+                                                            index === visibleEvidences.length - 1
+                                                                ? styles.evidenceFrameLast
+                                                                : {},
+                                                        ]}
+                                                    >
+                                                        <Image
+                                                            src={evidence.imageUrl!}
+                                                            style={styles.evidence}
+                                                        />
+                                                    </View>
+                                                ))}
                                         </View>
                                     ) : (
                                         <Text style={styles.noEvidence}>
