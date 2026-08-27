@@ -197,20 +197,19 @@ const styles = StyleSheet.create({
     },
 
     titleCell: {
-        width: "21%",
+        width: "20%",
         alignItems: "flex-start",
         justifyContent: "center",
     },
 
     commentsCell: {
-        width: "16%",
+        width: "20%",
         alignItems: "flex-start",
         justifyContent: "center",
     },
 
-
     evidenceCell: {
-        width: "46%",
+        width: "43%",
         borderRightWidth: 0,
         alignItems: "center",
         justifyContent: "center",
@@ -246,8 +245,8 @@ const styles = StyleSheet.create({
     },
 
     comments: {
-        fontSize: 6.8,
-        lineHeight: 1.3,
+        fontSize: 6.4,
+        lineHeight: 1.25,
         color: "#374151",
         textAlign: "left",
     },
@@ -315,6 +314,33 @@ const styles = StyleSheet.create({
 function formatDate(value: string) {
     const [year, month, day] = value.split("-");
     return `${day}/${month}/${year}`;
+}
+
+/**
+ * Inserta puntos de corte invisibles en textos técnicos largos para que
+ * React PDF pueda envolverlos dentro de la celda sin desbordarse.
+ */
+function wrapTechnicalText(value: string): string {
+    return value
+        .split(/\s+/)
+        .map((token) => {
+            if (token.length <= 18) {
+                return token;
+            }
+
+            // Permite corte después de separadores habituales en nombres SAP.
+            const withBreaks = token.replace(
+                /([_\-\/\\.])/g,
+                "$1\u200B"
+            );
+
+            // Si sigue siendo una cadena larga, agrega cortes cada 18 caracteres.
+            return withBreaks.replace(
+                /([^\u200B]{18})(?=[^\u200B])/g,
+                "$1\u200B"
+            );
+        })
+        .join(" ");
 }
 
 /* =========================
@@ -476,7 +502,9 @@ export function ChecklistPdfDocument({
                             />
 
                             <Text style={styles.systemSummarySid}>
-                                {system.description ?? system.sid ?? "Sin descripción"}
+                                {wrapTechnicalText(
+                                    system.description ?? system.sid ?? "Sin descripción"
+                                )}
                             </Text>
                         </View>
                     ))}
@@ -494,8 +522,10 @@ export function ChecklistPdfDocument({
                         {/* Encabezado del sistema */}
                         <View style={styles.systemHeader}>
                             <Text style={styles.systemTitle}>
-                                {system.sid ?? "Sin SID"} -{" "}
-                                {system.description ?? "Sin descripción"}
+                                {wrapTechnicalText(system.sid ?? "Sin SID")} -{" "}
+                                {wrapTechnicalText(
+                                    system.description ?? "Sin descripción"
+                                )}
                             </Text>
 
                             <Text style={styles.systemMeta}>
@@ -584,12 +614,12 @@ export function ChecklistPdfDocument({
                                     ]}
                                 >
                                     <Text style={styles.pointTitle}>
-                                        {point.title}
+                                        {wrapTechnicalText(point.title)}
                                     </Text>
 
                                     {point.description && (
                                         <Text style={styles.pointDescription}>
-                                            {point.description}
+                                            {wrapTechnicalText(point.description)}
                                         </Text>
                                     )}
                                 </View>
@@ -603,7 +633,7 @@ export function ChecklistPdfDocument({
                                 >
                                     {point.comments ? (
                                         <Text style={styles.comments}>
-                                            {point.comments}
+                                            {wrapTechnicalText(point.comments)}
                                         </Text>
                                     ) : (
                                         <Text style={styles.emptyText}>
