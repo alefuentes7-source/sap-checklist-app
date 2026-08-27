@@ -20,9 +20,15 @@ export function ClientCard({
   sent,
 }: ClientCardProps) {
   function abrirWizard() {
-    const url = `/checklist/nuevo?cliente=${id}`;
-    const width = Math.round(window.screen.availWidth * 0.25);
-    const height = window.screen.availHeight;
+    const url =
+      `/checklist/nuevo?cliente=${id}`;
+
+    const width = Math.round(
+      window.screen.availWidth * 0.25
+    );
+
+    const height =
+      window.screen.availHeight;
 
     const popup = window.open(
       url,
@@ -41,50 +47,82 @@ export function ClientCard({
     <button
       type="button"
       onClick={abrirWizard}
-      className={`group flex w-full items-center justify-between gap-3 rounded-card border p-4 text-left transition ${
-        assigned
-          ? "border-line bg-surface hover:border-accent"
-          : "border-line/70 bg-surface/60 hover:border-ink-soft"
+      className={`group relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border p-4 text-left shadow-sm transition-all duration-200 ${
+        sent
+          ? "border-emerald-200 bg-emerald-50/50 hover:border-emerald-300"
+          : assigned
+            ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-cyan-400 hover:shadow-md"
+            : "border-slate-200 bg-white/70 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-md"
       }`}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        {providerLogoUrl && (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-white p-1">
+      {/* Línea lateral */}
+      <div
+        className={`absolute bottom-0 left-0 top-0 w-1 ${
+          sent
+            ? "bg-emerald-500"
+            : assigned
+              ? "bg-cyan-500"
+              : "bg-slate-300"
+        }`}
+      />
+
+      <div className="flex min-w-0 items-center gap-3 pl-1">
+        {providerLogoUrl ? (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm">
             <img
               src={providerLogoUrl}
-              alt={`Logo de ${providerName ?? "proveedor"}`}
+              alt={`Logo de ${
+                providerName ??
+                "proveedor"
+              }`}
               className="max-h-full max-w-full object-contain"
             />
+          </div>
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 font-display text-sm font-semibold text-slate-500">
+            {name
+              .slice(0, 2)
+              .toUpperCase()}
           </div>
         )}
 
         <div className="min-w-0">
-          <p className="truncate font-display text-base font-medium text-ink">
+          <p className="truncate font-display text-base font-semibold text-slate-900">
             {name}
           </p>
 
-          <p className="mt-0.5 truncate font-mono text-xs text-ink-soft">
-            {[country, providerName].filter(Boolean).join(" · ") ||
+          <p className="mt-1 truncate font-mono text-[11px] text-slate-500">
+            {[country, providerName]
+              .filter(Boolean)
+              .join(" · ") ||
               "Sin datos de proveedor"}
           </p>
         </div>
       </div>
 
-      <span
-  className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide ${
-    sent
-      ? "bg-accent-soft text-accent"
-      : assigned
-        ? "bg-line/60 text-ink-soft"
-        : "bg-line/60 text-ink-soft"
-  }`}
->
-  {sent
-    ? "✓ Enviado"
-    : assigned
-      ? "Asignado"
-      : "No Asignado"}
-</span>
+      <div className="flex shrink-0 items-center gap-2">
+        <span
+          className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide ${
+            sent
+              ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+              : assigned
+                ? "border-cyan-100 bg-cyan-50 text-cyan-700"
+                : "border-slate-200 bg-slate-100 text-slate-500"
+          }`}
+        >
+          {sent
+            ? "✓ Enviado"
+            : assigned
+              ? "Asignado"
+              : "No asignado"}
+        </span>
+
+        {!sent && (
+          <span className="text-lg text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-cyan-500">
+            ›
+          </span>
+        )}
+      </div>
     </button>
   );
 }

@@ -41,6 +41,7 @@ export function ClientList({
                 name={cliente.name}
                 country={cliente.country}
                 providerName={cliente.providerName}
+                providerLogoUrl={cliente.providerLogoUrl}
                 assigned={true}
                 sent={sentClientIds.includes(cliente.id)}
               />
@@ -79,6 +80,7 @@ export function ClientList({
                 name={cliente.name}
                 country={cliente.country}
                 providerName={cliente.providerName}
+                providerLogoUrl={cliente.providerLogoUrl}
                 assigned={false}
                 sent={false}
               />
