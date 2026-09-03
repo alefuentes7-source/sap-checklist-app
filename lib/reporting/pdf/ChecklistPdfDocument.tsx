@@ -24,80 +24,146 @@ const styles = StyleSheet.create({
     },
 
     /* =========================
-       CABECERA
-       ========================= */
+   CABECERA TECNOLÓGICA
+   ========================= */
 
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingBottom: 9,
-        marginBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: "#d1d5db",
+    heroHeader: {
+        position: "relative",
+        height: 118,
+        marginHorizontal: -24,
+        marginTop: -20,
+        marginBottom: 14,
+        backgroundColor: "#06152F",
+        overflow: "hidden",
     },
 
-    logoContainer: {
-        width: 80,
-        height: 38,
-        alignItems: "center",
+    heroBackground: {
+        position: "absolute",
+        top: 0,
+        right: 0,
+        width: "58%",
+        height: "100%",
+        objectFit: "cover",
+        opacity: 0.72,
+    },
+
+    heroOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(3, 15, 36, 0.34)",
+    },
+
+    heroContent: {
+        position: "relative",
+        height: "100%",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingTop: 14,
+        paddingBottom: 12,
+        paddingHorizontal: 24,
+    },
+
+    heroLeft: {
+        width: "68%",
+        justifyContent: "space-between",
+    },
+
+    heroProviderLogoContainer: {
+        width: 90,
+        height: 32,
+        alignItems: "flex-start",
         justifyContent: "center",
     },
-
-    headerLogo: {
-        width: 80,
-        height: 38,
+    
+    heroProviderLogo: {
+        maxWidth: 90,
+        maxHeight: 30,
         objectFit: "contain",
     },
 
-    logoFallback: {
+    heroProviderFallback: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#FFFFFF",
+    },
+
+    heroClientName: {
+        marginTop: 7,
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#FFFFFF",
+    },
+
+    heroStatusRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 4,
+    },
+
+    heroStatusLabel: {
+        fontSize: 9,
+        color: "#E5E7EB",
+    },
+
+    heroStatusOk: {
+        marginLeft: 3,
         fontSize: 9,
         fontWeight: "bold",
-        color: "#374151",
-        textAlign: "center",
+        color: "#22C55E",
     },
 
-    headerCenter: {
-        flexGrow: 1,
+    heroStatusWarning: {
+        marginLeft: 3,
+        fontSize: 9,
+        fontWeight: "bold",
+        color: "#F59E0B",
+    },
+
+    heroMetadata: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 11,
+    },
+
+    heroMetadataText: {
+        fontSize: 7.3,
+        color: "#F3F4F6",
+    },
+
+    heroMetadataSeparator: {
+        marginHorizontal: 6,
+        fontSize: 7.3,
+        color: "#94A3B8",
+    },
+
+    heroRight: {
+        width: "28%",
+        alignItems: "flex-end",
+        justifyContent: "flex-start",
+    },
+
+    heroClientLogoBox: {
+        width: 90,
+        height: 40,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 10,
+    },
+    
+    heroClientLogo: {
+        maxWidth: 90,
+        maxHeight: 34,
+        objectFit: "contain",
     },
 
-    clientName: {
-        fontSize: 16,
+    heroClientFallback: {
+        fontSize: 7,
         fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
     },
-
-    reportTitle: {
-        marginTop: 2,
-        fontSize: 8.5,
-        color: "#6b7280",
-        textAlign: "center",
-    },
-
-    headerInfoRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 5,
-    },
-
-    headerInfoText: {
-        fontSize: 7.5,
-        color: "#374151",
-    },
-
-    headerInfoSeparator: {
-        fontSize: 7.5,
-        color: "#9ca3af",
-        marginHorizontal: 5,
-    },
-
-    /* =========================
-       RESUMEN
-       ========================= */
 
     summaryTitle: {
         marginTop: 2,
@@ -316,6 +382,24 @@ function formatDate(value: string) {
     return `${day}/${month}/${year}`;
 }
 
+function formatCurrentTime(): string {
+    return new Intl.DateTimeFormat("es-CL", {
+        timeZone: "America/Santiago",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    }).format(new Date());
+}
+
+function getOverallReportStatus(
+    report: DailyClientReport
+): "OK" | "WARNING" {
+    return report.systems.some(
+        (system) => system.overallStatus === "WARNING"
+    )
+        ? "WARNING"
+        : "OK";
+}
 /**
  * Inserta puntos de corte invisibles en textos técnicos largos para que
  * React PDF pueda envolverlos dentro de la celda sin desbordarse.
@@ -410,6 +494,12 @@ export function ChecklistPdfDocument({
 }: {
     report: DailyClientReport;
 }): ReactElement<DocumentProps> {
+    const overallStatus =
+        getOverallReportStatus(report);
+
+    const executionTime =
+        formatCurrentTime();
+
     return (
         <Document
             title={`Checklist SAP - ${report.client.name} - ${report.executionDate}`}
@@ -424,58 +514,102 @@ export function ChecklistPdfDocument({
               CABECERA
               ===================== */}
 
-                <View style={styles.header}>
-                    {/* Logo proveedor */}
-                    <View style={styles.logoContainer}>
-                        {report.provider?.logoUrl ? (
-                            <Image
-                                src={report.provider.logoUrl}
-                                style={styles.headerLogo}
-                            />
-                        ) : (
-                            <Text style={styles.logoFallback}>
-                                {report.provider?.name ?? ""}
-                            </Text>
-                        )}
-                    </View>
+                <View style={styles.heroHeader}>
+                    {/* Imagen tecnológica de fondo */}
+                    <Image
+                        src={`${process.cwd()}/public/pdf-header.png`}
+                        style={styles.heroBackground}
+                    />
 
-                    {/* Centro */}
-                    <View style={styles.headerCenter}>
-                        <Text style={styles.clientName}>
-                            {report.client.name}
-                        </Text>
+                    <View style={styles.heroOverlay} />
 
-                        <Text style={styles.reportTitle}>
-                            Informe diario de checklist SAP
-                        </Text>
+                    <View style={styles.heroContent}>
+                        {/* ==========================
+            IZQUIERDA
+            ========================== */}
+                        <View style={styles.heroLeft}>
 
-                        <View style={styles.headerInfoRow}>
-                            <Text style={styles.headerInfoText}>
-                                Fecha: {formatDate(report.executionDate)}
-                            </Text>
+                            {/* Logo proveedor */}
+                            <View style={styles.heroProviderLogoContainer}>
+                                {report.provider?.logoUrl ? (
+                                    <Image
+                                        src={report.provider.logoUrl}
+                                        style={styles.heroProviderLogo}
+                                    />
+                                ) : (
+                                    <Text style={styles.heroProviderFallback}>
+                                        {report.provider?.name ?? ""}
+                                    </Text>
+                                )}
+                            </View>
 
-                            <Text style={styles.headerInfoSeparator}>
-                                •
-                            </Text>
+                            {/* Cliente */}
+                            <View>
+                                <Text style={styles.heroClientName}>
+                                    {report.client.name}
+                                </Text>
 
-                            <Text style={styles.headerInfoText}>
-                                Operador: {report.operator?.name ?? "-"}
-                            </Text>
+                                <View style={styles.heroStatusRow}>
+                                    <Text style={styles.heroStatusLabel}>
+                                        Estado general:
+                                    </Text>
+
+                                    <Text
+                                        style={
+                                            overallStatus === "WARNING"
+                                                ? styles.heroStatusWarning
+                                                : styles.heroStatusOk
+                                        }
+                                    >
+                                        {overallStatus === "WARNING"
+                                            ? "ADVERTENCIA"
+                                            : "OK"}
+                                    </Text>
+                                </View>
+
+                                {/* Datos de ejecución */}
+                                <View style={styles.heroMetadata}>
+                                    <Text style={styles.heroMetadataText}>
+                                        Fecha: {formatDate(report.executionDate)}
+                                    </Text>
+
+                                    <Text style={styles.heroMetadataSeparator}>
+                                        •
+                                    </Text>
+
+                                    <Text style={styles.heroMetadataText}>
+                                        Hora: {executionTime}
+                                    </Text>
+
+                                    <Text style={styles.heroMetadataSeparator}>
+                                        •
+                                    </Text>
+
+                                    <Text style={styles.heroMetadataText}>
+                                        Ejecutado por: {report.operator?.name ?? "-"}
+                                    </Text>
+                                </View>
+                            </View>
                         </View>
-                    </View>
 
-                    {/* Logo cliente */}
-                    <View style={styles.logoContainer}>
-                        {report.client.logoUrl ? (
-                            <Image
-                                src={report.client.logoUrl}
-                                style={styles.headerLogo}
-                            />
-                        ) : (
-                            <Text style={styles.logoFallback}>
-                                {report.client.name}
-                            </Text>
-                        )}
+                        {/* ==========================
+            DERECHA
+            Logo cliente
+            ========================== */}
+                        <View style={styles.heroRight}>
+                            <View style={styles.heroClientLogoBox}>
+                                {report.client.logoUrl ? (
+                                    <Image
+                                        src={report.client.logoUrl}
+                                        style={styles.heroClientLogo}
+                                    />
+                                ) : (
+                                    <Text style={styles.heroClientFallback}>
+                                        {report.client.name}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
                     </View>
                 </View>
 
@@ -702,6 +836,6 @@ export function ChecklistPdfDocument({
                     />
                 </View>
             </Page>
-        </Document>
+        </Document >
     );
 }
