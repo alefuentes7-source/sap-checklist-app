@@ -41,19 +41,19 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 0,
         right: 0,
-        width: "58%",
+        width: "72%",
         height: "100%",
         objectFit: "cover",
-        opacity: 0.72,
+        opacity: 1,
     },
 
     heroOverlay: {
         position: "absolute",
         top: 0,
         left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(3, 15, 36, 0.34)",
+        width: "52%",
+        height: "100%",
+        backgroundColor: "rgba(3, 15, 36, 0.55)",
     },
 
     heroContent: {
@@ -72,14 +72,14 @@ const styles = StyleSheet.create({
     },
 
     heroProviderLogoContainer: {
-        width: 90,
+        width: 100,
         height: 32,
         alignItems: "flex-start",
         justifyContent: "center",
     },
     
     heroProviderLogo: {
-        maxWidth: 90,
+        maxWidth: 100,
         maxHeight: 30,
         objectFit: "contain",
     },
@@ -140,21 +140,23 @@ const styles = StyleSheet.create({
     },
 
     heroRight: {
-        width: "28%",
+        width: "26%",
         alignItems: "flex-end",
         justifyContent: "flex-start",
+        paddingTop: 4,
+        paddingRight: 6,
     },
 
     heroClientLogoBox: {
-        width: 90,
+        width: 96,
         height: 40,
         alignItems: "center",
         justifyContent: "center",
     },
-    
+
     heroClientLogo: {
-        maxWidth: 90,
-        maxHeight: 34,
+        maxWidth: 96,
+        maxHeight: 36,
         objectFit: "contain",
     },
 
