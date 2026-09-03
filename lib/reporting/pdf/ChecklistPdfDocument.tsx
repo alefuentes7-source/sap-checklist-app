@@ -9,9 +9,13 @@ import {
     Path,
 } from "@react-pdf/renderer";
 
+import fs from "node:fs";
+import path from "node:path";
+
 import type { DailyClientReport } from "@/lib/reporting/types";
 import type { ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
+
 
 const styles = StyleSheet.create({
     page: {
@@ -41,19 +45,19 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 0,
         right: 0,
-        width: "72%",
+        width: "66%",
         height: "100%",
         objectFit: "cover",
-        opacity: 1,
+        opacity: 0.95,
     },
 
     heroOverlay: {
         position: "absolute",
         top: 0,
         left: 0,
-        width: "52%",
+        width: "58%",
         height: "100%",
-        backgroundColor: "rgba(3, 15, 36, 0.55)",
+        backgroundColor: "rgba(3, 15, 36, 0.30)",
     },
 
     heroContent: {
@@ -77,7 +81,7 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         justifyContent: "center",
     },
-    
+
     heroProviderLogo: {
         maxWidth: 100,
         maxHeight: 30,
@@ -392,6 +396,29 @@ function formatCurrentTime(): string {
         hour12: false,
     }).format(new Date());
 }
+function getPdfHeaderImage(): string | null {
+    try {
+        const imagePath = path.join(
+            process.cwd(),
+            "public",
+            "pdf-header.png"
+        );
+
+        const imageBuffer =
+            fs.readFileSync(imagePath);
+
+        return `data:image/png;base64,${imageBuffer.toString(
+            "base64"
+        )}`;
+    } catch (error) {
+        console.error(
+            "No se pudo cargar pdf-header.png:",
+            error
+        );
+
+        return null;
+    }
+}
 
 function getOverallReportStatus(
     report: DailyClientReport
@@ -502,6 +529,9 @@ export function ChecklistPdfDocument({
     const executionTime =
         formatCurrentTime();
 
+    const headerImage =
+        getPdfHeaderImage();
+
     return (
         <Document
             title={`Checklist SAP - ${report.client.name} - ${report.executionDate}`}
@@ -518,10 +548,12 @@ export function ChecklistPdfDocument({
 
                 <View style={styles.heroHeader}>
                     {/* Imagen tecnológica de fondo */}
-                    <Image
-                        src={`${process.cwd()}/public/pdf-header.png`}
-                        style={styles.heroBackground}
-                    />
+                    {headerImage && (
+                        <Image
+                            src={headerImage}
+                            style={styles.heroBackground}
+                        />
+                    )}
 
                     <View style={styles.heroOverlay} />
 
