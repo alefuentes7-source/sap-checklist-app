@@ -20,7 +20,8 @@ export async function sendEmail(
   }
 
   const info = await gmailTransport.sendMail({
-    from: smtpFrom,
+    from: `"Checklist" <${smtpFrom}>`,
+    replyTo: smtpFrom,
 
     to: params.to.join(", "),
 

@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#06152F",
         overflow: "hidden",
     },
-
+/*aqui se aclara el fondo de la derecha*/
     heroBackground: {
         position: "absolute",
         top: 0,
@@ -48,16 +48,25 @@ const styles = StyleSheet.create({
         width: "66%",
         height: "100%",
         objectFit: "cover",
-        opacity: 0.95,
+        opacity: 1,
     },
-
+/*aqui se aclara el fondo de la izquierda*/
     heroOverlay: {
         position: "absolute",
         top: 0,
         left: 0,
         width: "58%",
         height: "100%",
-        backgroundColor: "rgba(3, 15, 36, 0.30)",
+        backgroundColor: "rgba(3, 15, 36, 0.05)",
+    },
+
+    heroLightOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
     },
 
     heroContent: {
@@ -554,13 +563,11 @@ export function ChecklistPdfDocument({
                             style={styles.heroBackground}
                         />
                     )}
-
+                    <View style={styles.heroLightOverlay} />
                     <View style={styles.heroOverlay} />
 
                     <View style={styles.heroContent}>
-                        {/* ==========================
-            IZQUIERDA
-            ========================== */}
+                        {/* ==========================IZQUIERDA    ========================== */}
                         <View style={styles.heroLeft}>
 
                             {/* Logo proveedor */}
