@@ -82,7 +82,7 @@ export function ClientList({
                 providerName={cliente.providerName}
                 providerLogoUrl={cliente.providerLogoUrl}
                 assigned={false}
-                sent={false}
+                sent={sentClientIds.includes(cliente.id)}
               />
             ))}
           </div>

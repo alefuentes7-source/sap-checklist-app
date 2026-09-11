@@ -106,25 +106,25 @@ export default async function ClientesPage() {
         ? cliente.provider[0] ?? null
         : cliente.provider ?? null;
 
-        return {
-          id: cliente.id,
-          name: cliente.name,
-          country: cliente.country,
-          providerName:
-            provider?.name ?? null,
-        
-          // Primero usamos el logo propio del cliente.
-          // Si no tiene, usamos el logo del proveedor.
-          providerLogoUrl:
-            cliente.logo_url ??
-            provider?.logo_url ??
-            null,
-        };
+      return {
+        id: cliente.id,
+        name: cliente.name,
+        country: cliente.country,
+        providerName:
+          provider?.name ?? null,
+
+        // Primero usamos el logo propio del cliente.
+        // Si no tiene, usamos el logo del proveedor.
+        providerLogoUrl:
+          cliente.logo_url ??
+          provider?.logo_url ??
+          null,
+      };
     }
   );
 
 
-  
+
   /*
    * Clientes asignados.
    */
@@ -146,60 +146,49 @@ export default async function ClientesPage() {
         !idsAsignados.has(cliente.id)
     );
 
-  /*
-   * Estado diario.
-   */
-  const assignedClientIds =
-    asignados.map(
-      (cliente) => cliente.id
-    );
-
+  /**
+ * Estado diario.
+ *
+ * Consultamos TODOS los clientes enviados hoy,
+ * no solamente los asignados al operador.
+ */
   const executionDate =
     getChecklistDate();
 
-  let sentClientIds =
-    new Set<string>();
+  const {
+    data: reportsData,
+    error: reportsError,
+  } = await supabase
+    .from("daily_reports")
+    .select(
+      "client_id, delivery_status"
+    )
+    .eq(
+      "execution_date",
+      executionDate
+    )
+    .eq(
+      "delivery_status",
+      "SENT_TO_CLIENT"
+    );
 
-  if (assignedClientIds.length > 0) {
-    const {
-      data: reportsData,
-      error: reportsError,
-    } = await supabase
-      .from("daily_reports")
-      .select(
-        "client_id, delivery_status"
-      )
-      .in(
-        "client_id",
-        assignedClientIds
-      )
-      .eq(
-        "execution_date",
-        executionDate
-      )
-      .eq(
-        "delivery_status",
-        "SENT_TO_CLIENT"
-      );
-
-    if (reportsError) {
-      console.error(
-        "Error cargando daily_reports:",
-        reportsError
-      );
-    }
-
-    const reports =
-      (reportsData ?? []) as DailyReportRow[];
-
-    sentClientIds =
-      new Set(
-        reports.map(
-          (report) =>
-            report.client_id
-        )
-      );
+  if (reportsError) {
+    console.error(
+      "Error cargando daily_reports:",
+      reportsError
+    );
   }
+
+  const reports =
+    (reportsData ?? []) as DailyReportRow[];
+
+  const sentClientIds =
+    new Set(
+      reports.map(
+        (report) =>
+          report.client_id
+      )
+    );
 
   /*
    * Dashboard.
