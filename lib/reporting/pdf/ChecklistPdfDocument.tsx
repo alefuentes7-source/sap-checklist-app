@@ -37,20 +37,20 @@ const styles = StyleSheet.create({
         marginHorizontal: -24,
         marginTop: -20,
         marginBottom: 14,
-        backgroundColor: "#06152F",
+        backgroundColor: "#EAF7FF",
         overflow: "hidden",
     },
-/*aqui se aclara el fondo de la derecha*/
+    /*aqui se aclara el fondo de la derecha*/
     heroBackground: {
         position: "absolute",
         top: 0,
-        right: 0,
-        width: "66%",
+        left: 0,
+        width: "100%",
         height: "100%",
         objectFit: "cover",
         opacity: 1,
     },
-/*aqui se aclara el fondo de la izquierda*/
+    /*aqui se aclara el fondo de la izquierda*/
     heroOverlay: {
         position: "absolute",
         top: 0,
@@ -100,14 +100,14 @@ const styles = StyleSheet.create({
     heroProviderFallback: {
         fontSize: 14,
         fontWeight: "bold",
-        color: "#FFFFFF",
+        color: "#111827",
     },
 
     heroClientName: {
         marginTop: 7,
         fontSize: 16,
         fontWeight: "bold",
-        color: "#FFFFFF",
+        color: "#111827",
     },
 
     heroStatusRow: {
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
 
     heroStatusLabel: {
         fontSize: 9,
-        color: "#E5E7EB",
+        color: "#111827",
     },
 
     heroStatusOk: {
@@ -143,13 +143,13 @@ const styles = StyleSheet.create({
 
     heroMetadataText: {
         fontSize: 7.3,
-        color: "#F3F4F6",
+        color: "#111827",
     },
 
     heroMetadataSeparator: {
         marginHorizontal: 6,
         fontSize: 7.3,
-        color: "#94A3B8",
+        color: "#475569",
     },
 
     heroRight: {
@@ -563,9 +563,7 @@ export function ChecklistPdfDocument({
                             style={styles.heroBackground}
                         />
                     )}
-                    <View style={styles.heroLightOverlay} />
-                    <View style={styles.heroOverlay} />
-
+              
                     <View style={styles.heroContent}>
                         {/* ==========================IZQUIERDA    ========================== */}
                         <View style={styles.heroLeft}>
@@ -689,28 +687,11 @@ export function ChecklistPdfDocument({
               SISTEMAS
               ===================== */}
 
-                {report.systems.map((system) => (
-                    <View
-                        key={system.id}
-                        style={styles.systemBlock}
-                    >
-                        {/* Encabezado del sistema */}
-                        <View style={styles.systemHeader}>
-                            <Text style={styles.systemTitle}>
-                                {wrapTechnicalText(system.sid ?? "Sin SID")} -{" "}
-                                {wrapTechnicalText(
-                                    system.description ?? "Sin descripción"
-                                )}
-                            </Text>
+                {report.systems.map((system) => {
+                    const [firstPoint, ...remainingPoints] =
+                        system.reviewPoints;
 
-                            <Text style={styles.systemMeta}>
-                                {system.environment ?? ""}
-                                {" · "}
-                                Estado general: {system.overallStatus}
-                            </Text>
-                        </View>
-
-                        {/* Cabecera de tabla */}
+                    const renderTableHeader = () => (
                         <View style={styles.tableHeader}>
                             <View
                                 style={[
@@ -756,110 +737,214 @@ export function ChecklistPdfDocument({
                                 </Text>
                             </View>
                         </View>
+                    );
 
-                        {/* Filas */}
-                        {system.reviewPoints.map((point) => (
+                    const renderPoint = (
+                        point: (typeof system.reviewPoints)[number]
+                    ) => (
+                        <View
+                            key={point.id}
+                            style={styles.row}
+                            wrap={false}
+                        >
+                            {/* Estado */}
                             <View
-                                key={point.id}
-                                style={styles.row}
-                                wrap={false}
+                                style={[
+                                    styles.cell,
+                                    styles.statusCell,
+                                ]}
                             >
-                                {/* Estado */}
-                                <View
-                                    style={[
-                                        styles.cell,
-                                        styles.statusCell,
-                                    ]}
-                                >
-                                    <StatusIcon
-                                        status={
-                                            point.status === "WARNING"
-                                                ? "WARNING"
-                                                : "OK"
-                                        }
-                                        size={20}
-                                    />
-                                </View>
+                                <StatusIcon
+                                    status={
+                                        point.status === "WARNING"
+                                            ? "WARNING"
+                                            : "OK"
+                                    }
+                                    size={20}
+                                />
+                            </View>
 
-                                {/* Punto revisión */}
-                                <View
-                                    style={[
-                                        styles.cell,
-                                        styles.titleCell,
-                                    ]}
-                                >
-                                    <Text style={styles.pointTitle}>
-                                        {wrapTechnicalText(point.title)}
+                            {/* Punto revisión */}
+                            <View
+                                style={[
+                                    styles.cell,
+                                    styles.titleCell,
+                                ]}
+                            >
+                                <Text style={styles.pointTitle}>
+                                    {wrapTechnicalText(point.title)}
+                                </Text>
+
+                                {point.description && (
+                                    <Text style={styles.pointDescription}>
+                                        {wrapTechnicalText(
+                                            point.description
+                                        )}
                                     </Text>
+                                )}
+                            </View>
 
-                                    {point.description && (
-                                        <Text style={styles.pointDescription}>
-                                            {wrapTechnicalText(point.description)}
-                                        </Text>
-                                    )}
-                                </View>
+                            {/* Comentarios */}
+                            <View
+                                style={[
+                                    styles.cell,
+                                    styles.commentsCell,
+                                ]}
+                            >
+                                {point.comments ? (
+                                    <Text style={styles.comments}>
+                                        {wrapTechnicalText(
+                                            point.comments
+                                        )}
+                                    </Text>
+                                ) : (
+                                    <Text style={styles.emptyText}>
+                                        Sin comentarios
+                                    </Text>
+                                )}
+                            </View>
 
-                                {/* Comentarios */}
-                                <View
-                                    style={[
-                                        styles.cell,
-                                        styles.commentsCell,
-                                    ]}
-                                >
-                                    {point.comments ? (
-                                        <Text style={styles.comments}>
-                                            {wrapTechnicalText(point.comments)}
-                                        </Text>
-                                    ) : (
-                                        <Text style={styles.emptyText}>
-                                            Sin comentarios
-                                        </Text>
-                                    )}
-                                </View>
-
-                                {/* Evidencia */}
-                                <View
-                                    style={[
-                                        styles.cell,
-                                        styles.evidenceCell,
-                                    ]}
-                                >
-                                    {point.evidences.some(
-                                        (evidence) => Boolean(evidence.imageUrl)
-                                    ) ? (
-                                        <View style={styles.evidencesContainer}>
-                                            {point.evidences
-                                                .filter(
-                                                    (evidence) =>
-                                                        Boolean(evidence.imageUrl)
-                                                )
-                                                .map((evidence, index, visibleEvidences) => (
+                            {/* Evidencia */}
+                            <View
+                                style={[
+                                    styles.cell,
+                                    styles.evidenceCell,
+                                ]}
+                            >
+                                {point.evidences.some(
+                                    (evidence) =>
+                                        Boolean(evidence.imageUrl)
+                                ) ? (
+                                    <View
+                                        style={
+                                            styles.evidencesContainer
+                                        }
+                                    >
+                                        {point.evidences
+                                            .filter(
+                                                (evidence) =>
+                                                    Boolean(
+                                                        evidence.imageUrl
+                                                    )
+                                            )
+                                            .map(
+                                                (
+                                                    evidence,
+                                                    index,
+                                                    visibleEvidences
+                                                ) => (
                                                     <View
-                                                        key={evidence.id}
+                                                        key={
+                                                            evidence.id
+                                                        }
                                                         style={[
                                                             styles.evidenceFrame,
-                                                            index === visibleEvidences.length - 1
+                                                            index ===
+                                                                visibleEvidences.length -
+                                                                1
                                                                 ? styles.evidenceFrameLast
                                                                 : {},
                                                         ]}
                                                     >
                                                         <Image
-                                                            src={evidence.imageUrl!}
-                                                            style={styles.evidence}
+                                                            src={
+                                                                evidence.imageUrl!
+                                                            }
+                                                            style={
+                                                                styles.evidence
+                                                            }
                                                         />
                                                     </View>
-                                                ))}
-                                        </View>
-                                    ) : (
-                                        <Text style={styles.noEvidence}>
-                                            Sin evidencia
-                                        </Text>
-                                    )}
-                                </View>
+                                                )
+                                            )}
+                                    </View>
+                                ) : (
+                                    <Text style={styles.noEvidence}>
+                                        Sin evidencia
+                                    </Text>
+                                )}
                             </View>
-                        ))}
-                    </View>
-                ))}
+                        </View>
+                    );
+
+                    return (
+                        <View
+                            key={system.id}
+                            style={styles.systemBlock}
+                        >
+                            {firstPoint ? (
+                                /*
+                                 * Este bloque NO se puede dividir.
+                                 *
+                                 * Si encabezado + cabecera de tabla +
+                                 * primera fila no caben en la página,
+                                 * React-PDF mueve todo a la siguiente.
+                                 */
+                                <View wrap={false}>
+                                    {/* Encabezado del sistema */}
+                                    <View style={styles.systemHeader}>
+                                        <Text style={styles.systemTitle}>
+                                            {wrapTechnicalText(
+                                                system.sid ?? "Sin SID"
+                                            )}{" "}
+                                            -{" "}
+                                            {wrapTechnicalText(
+                                                system.description ??
+                                                "Sin descripción"
+                                            )}
+                                        </Text>
+
+                                        <Text style={styles.systemMeta}>
+                                            {system.environment ?? ""}
+                                            {" · "}
+                                            Estado general:{" "}
+                                            {system.overallStatus}
+                                        </Text>
+                                    </View>
+
+                                    {/* Cabecera de tabla */}
+                                    {renderTableHeader()}
+
+                                    {/* Primera fila */}
+                                    {renderPoint(firstPoint)}
+                                </View>
+                            ) : (
+                                /*
+                                 * Caso excepcional:
+                                 * sistema sin puntos de revisión.
+                                 */
+                                <View wrap={false}>
+                                    <View style={styles.systemHeader}>
+                                        <Text style={styles.systemTitle}>
+                                            {wrapTechnicalText(
+                                                system.sid ?? "Sin SID"
+                                            )}{" "}
+                                            -{" "}
+                                            {wrapTechnicalText(
+                                                system.description ??
+                                                "Sin descripción"
+                                            )}
+                                        </Text>
+
+                                        <Text style={styles.systemMeta}>
+                                            {system.environment ?? ""}
+                                            {" · "}
+                                            Estado general:{" "}
+                                            {system.overallStatus}
+                                        </Text>
+                                    </View>
+
+                                    {renderTableHeader()}
+                                </View>
+                            )}
+
+                            {/* Resto de las filas */}
+                            {remainingPoints.map((point) =>
+                                renderPoint(point)
+                            )}
+                        </View>
+                    );
+                })}
 
                 {/* =====================
               FOOTER
