@@ -328,97 +328,48 @@ export async function saveChecklistResult(
   } = params;
 
   const {
-    data: existenteData,
-    error: errBusqueda,
+    data,
+    error,
   } = await supabase
     .from("checklist_results")
-    .select("id")
-    .eq(
-      "checklist_id",
-      checklistId
+    .upsert(
+      {
+        checklist_id: checklistId,
+        review_point_id: reviewPointId,
+        status,
+        comments,
+        evidence_url: evidenceUrl,
+      },
+      {
+        onConflict:
+          "checklist_id,review_point_id",
+      }
     )
-    .eq(
-      "review_point_id",
-      reviewPointId
-    )
-    .maybeSingle();
-
-  if (errBusqueda) {
-    throw errBusqueda;
-  }
-
-  const existente =
-    existenteData as {
-      id: string;
-    } | null;
-
-  if (existente) {
-    const { error } =
-      await supabase
-        .from("checklist_results")
-        .update({
-          status,
-          comments,
-
-          /*
-           * Por ahora no eliminamos el campo
-           * antiguo.
-           */
-          evidence_url:
-            evidenceUrl,
-        })
-        .eq(
-          "id",
-          existente.id
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    return existente.id;
-  }
-
-  const {
-    data: nuevoData,
-    error: insertError,
-  } = await supabase
-    .from("checklist_results")
-    .insert({
-      checklist_id:
-        checklistId,
-
-      review_point_id:
-        reviewPointId,
-
-      status,
-
-      comments,
-
-      evidence_url:
-        evidenceUrl,
-    })
     .select("id")
     .single();
 
-  if (insertError) {
-    throw insertError;
+  if (error) {
+    console.error(
+      "Error guardando checklist_result:",
+      error
+    );
+
+    throw error;
   }
 
-  const nuevo =
-    nuevoData as {
+  const result =
+    data as {
       id: string;
     } | null;
 
-  if (!nuevo) {
+  if (!result) {
     throw new Error(
       "No se pudo guardar el resultado del checklist."
     );
   }
 
-  return nuevo.id;
+  return result.id;
 }
-
 /**
  * Sube una nueva evidencia.
  *
@@ -464,10 +415,10 @@ export async function uploadEvidence(
 
   const extension =
     file instanceof File &&
-    file.name.includes(".")
+      file.name.includes(".")
       ? file.name
-          .split(".")
-          .pop()
+        .split(".")
+        .pop()
       : "png";
 
   /*
@@ -491,7 +442,7 @@ export async function uploadEvidence(
       {
         contentType:
           file instanceof File &&
-          file.type
+            file.type
             ? file.type
             : "image/png",
 
@@ -562,9 +513,9 @@ export async function uploadEvidence(
 
   const currentMaxOrder =
     existingEvidenceData &&
-    existingEvidenceData.length > 0
+      existingEvidenceData.length > 0
       ? existingEvidenceData[0]
-          .display_order
+        .display_order
       : 0;
 
   const displayOrder =
